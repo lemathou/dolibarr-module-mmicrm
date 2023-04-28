@@ -57,6 +57,12 @@ $filter_list = [
 		'sql_join' => 'k', // Pas évident, la table peut service à plusieurs cas de figures
 		'sql_where' => 'k.fk_soc IS NULL',
 	],
+	'relance_not_before_cmd' => [
+		'label' => 'Pas relancé depuis dernière cmd (beta)',
+		'type' => 'bool',
+		'sql_join' => 'k', // Pas évident, la table peut service à plusieurs cas de figures
+		'sql_where' => 'k.fk_soc IS NULL',
+	],
 	'relance_next' => [
 		'type' => 'radio',
 		'list' => [
