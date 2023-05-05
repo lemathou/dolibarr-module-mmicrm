@@ -30,3 +30,9 @@ if (!$res && file_exists("../../../main.inc.php")) {
 if (!$res) {
 	die("Include of main fails");
 }
+
+// Useful things
+$moduleclassname = 'mod'.$modulename;
+$moduledir = strtolower($modulename);
+$modulecontext = $moduledir."@".$moduledir;
+$moduleprefix = strtoupper($modulename);
