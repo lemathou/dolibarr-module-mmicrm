@@ -437,13 +437,11 @@ class modMMICRM extends DolibarrModules
 		}
 
 		// Create extrafields during init
-		//include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
-		//$extrafields = new ExtraFields($this->db);
-		//$result1=$extrafields->addExtraField('mmicrm_myattr1', "New Attr 1 label", 'boolean', 1,  3, 'thirdparty',   0, 0, '', '', 1, '', 0, 0, '', '', 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
-		//$result2=$extrafields->addExtraField('mmicrm_myattr2', "New Attr 2 label", 'varchar', 1, 10, 'project',      0, 0, '', '', 1, '', 0, 0, '', '', 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
-		//$result3=$extrafields->addExtraField('mmicrm_myattr3', "New Attr 3 label", 'varchar', 1, 10, 'bank_account', 0, 0, '', '', 1, '', 0, 0, '', '', 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
-		//$result4=$extrafields->addExtraField('mmicrm_myattr4', "New Attr 4 label", 'select',  1,  3, 'thirdparty',   0, 1, '', array('options'=>array('code1'=>'Val1','code2'=>'Val2','code3'=>'Val3')), 1,'', 0, 0, '', '', 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
-		//$result5=$extrafields->addExtraField('mmicrm_myattr5', "New Attr 5 label", 'text',    1, 10, 'user',         0, 0, '', '', 1, '', 0, 0, '', '', 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
+		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+		$extrafields = new ExtraFields($this->db);
+
+		// User
+        $extrafields->addExtraField('email_sender_name', $langs->trans('Extrafield_email_sender_name'), 'varchar', 100, 48, 'user', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_email_sender_name'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
 
 		// Permissions
 		$this->remove($options);
