@@ -1,0 +1,60 @@
+# Copyright (C) 2023 Mathieu Moulin <mathieu@iprospective.fr>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+#
+# Generic
+#
+
+# Module label 'ModuleMMICRMName'
+ModuleMMICRMName = CRM suivi clients
+# Module description 'ModuleMMICRMDesc'
+ModuleMMICRMDesc = Gestion avancée des cients et prospects
+
+#
+# Admin page
+#
+MMICRMSetup = MMICRM setup
+Settings = Settings
+MMICRMSetupPage = MMICRM setup page
+DOCUMENT_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur l'ensemble des documents au statut brouillon
+PROPAL_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les devis au statut brouillon
+ORDER_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les commandes au statut brouillon
+INVOICE_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les factures au statut brouillon
+MMICRM_USER_MAILFROM_NAME = Champ personnalisé par utilisateur pour le nom de l'expéditeur des emails
+
+#
+# About page
+#
+About = About
+MMICRMAbout = About MMICRM
+MMICRMAboutPage = MMICRM about page
+
+#
+# Index page
+#
+MMICRMIndex = CRM
+
+#
+# Prospects page
+#
+MMICRMProspects = Gestion avancée des clients et prospects
+
+#
+# Fields
+#
+
+Extrafield_email_sender_name = Expéditeur affiché
+ExtrafieldToolTip_email_sender_name = Lors des envois par email
+

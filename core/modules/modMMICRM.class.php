@@ -441,7 +441,7 @@ class modMMICRM extends DolibarrModules
 		$extrafields = new ExtraFields($this->db);
 
 		// User
-        $extrafields->addExtraField('email_sender_name', $langs->trans('Extrafield_email_sender_name'), 'varchar', 100, 48, 'user', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_email_sender_name'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
+        $extrafields->addExtraField('email_sender_name', $langs->trans('Extrafield_email_sender_name'), 'varchar', 100, 48, 'user', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_email_sender_name'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_USER_MAILFROM_NAME');
 
 		// Permissions
 		$this->remove($options);
