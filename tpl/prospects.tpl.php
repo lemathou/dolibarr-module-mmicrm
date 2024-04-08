@@ -78,6 +78,11 @@ $filter_list = [
 			],
 		],
 	],
+	'groupe_client' => [
+		'label' => 'Uniquement les groupes presta PRO',
+		'type' => 'bool',
+		'sql_where' => 's2.p_group > 3',
+	],
 ];
 
 $filters = GETPOST('filters');
@@ -119,7 +124,7 @@ foreach($filter_list as $i=>$j) {
 		}
 		echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.$value.'" size="5" /><br />';
 	}
-	elseif ($j['type']=='checkbox') {
+	elseif ($j['type']=='checkbox' || $j['type']=='bool') {
 		if (!empty($filters[$i])) {
 			$checked = ' checked';
 			if (!empty($j['sql_join']))
@@ -178,8 +183,15 @@ echo '</tr>';
 echo '</table>';
 echo '</form>';
 
+$p_groups = [];
+$sql = 'SELECT * FROM '.MAIN_DB_PREFIX.'c_societe_p_group';
+$q = $db->query($sql);
+while($row = $q->fetch_assoc()) {
+        $p_groups[$row['rowid']] = $row;
+}
+
 // Base
-$sql = 'SELECT s.rowid, s.nom, s.name_alias, s.code_client, s.town
+$sql = 'SELECT s.rowid, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
 	FROM '.MAIN_DB_PREFIX.'societe s
 	INNER JOIN '.MAIN_DB_PREFIX.'societe_extrafields s2 ON s2.fk_object=s.rowid
 	'.(!empty($sql_join) ?' '.implode(' ', $sql_join) :'').'
@@ -276,6 +288,7 @@ echo '<table border="1" cellpadding="2">';
 echo '<tr>';
 echo '<th rowspan="2">Client</th>';
 echo '<th rowspan="2">Nom alternatif</th>';
+echo '<th rowspan="2">Groupe</th>';
 echo '<th rowspan="2">Ville</th>';
 echo '<th colspan="2">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
@@ -294,6 +307,7 @@ foreach($l as $row) {
 	echo '<tr>';
 	echo '<td><a href="/comm/card.php?socid='.$row['rowid'].'">'.$row['nom'].'</a></td>';
 	echo '<td>'.$row['name_alias'].'</td>';
+	echo '<td>'.(!empty($row['p_group']) ?$p_groups[$row['p_group']]['label'] :'').'</td>';
 	echo '<td>'.$row['town'].'</td>';
 	echo '<td class="num">'.$row['tot_nb'].'</td>';
 	echo '<td class="num">'.$row['tot_mt'].'</td>';
