@@ -123,15 +123,16 @@ class mmi_crm_sendmail extends mmi_generic_1_0
 
 		// Commercial
 		$commerciaux = $thirdparty->getSalesRepresentatives($user);
+		//var_dump($commerciaux);
 		if (!empty($commerciaux)) {
 			$commercial = array_pop($commerciaux);
 		}
 		else {
-			$commercial = new stdClass();
-			$commercial->firstname = 'Pisceen';
-			$commercial->lastname = '';
-			$commercial->email = 'contact@dercya.com';
-			$commercial->office_phone = '04 69 11 00 79';
+			$commercial = [];
+			$commercial['firstname'] = 'Pisceen';
+			$commercial['lastname'] = '';
+			$commercial['email'] = 'contact@dercya.com';
+			$commercial['office_phone'] = '04 69 11 00 79';
 		}
 
 		// Clé de paiement
@@ -151,9 +152,9 @@ class mmi_crm_sendmail extends mmi_generic_1_0
 			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
 			.'Bien cordialement'."\r\n"
 			.'Best regards'."\r\n"."\r\n"
-			.$commercial->firstname.($commercial->lastname ?' '.$commercial->lastname :'')."\r\n"
-			.$commercial->email."\r\n"
-			.'TEL: '.$commercial->office_phone."\r\n"."\r\n"
+			.$commercial['firstname'].($commercial['lastname'] ?' '.$commercial['lastname'] :'')."\r\n"
+			.$commercial['email']."\r\n"
+			.'TEL: '.$commercial['office_phone']."\r\n"."\r\n"
 			.'https://Pisceen.com'."\r\n";
 		$toselect = [$object->id];
 		$uploaddir = DOL_DOCUMENT_ROOT.'/../documents/propale';
