@@ -22,12 +22,11 @@
  */
 
 // Load Dolibarr environment
-require_once 'env.inc.php';
 require_once 'main_load.inc.php';
 $langs->load("mmicrm@mmicrm");
 
 $help_url = '';
-$page_name = "MMICRMIndex";
-$page_ref = 'index';
+$page_name = "MMICRMRelances";
+$page_ref = 'relances';
 
 require_once 'page.inc.php';

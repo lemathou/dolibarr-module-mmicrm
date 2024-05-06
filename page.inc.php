@@ -10,6 +10,10 @@ $h++;
 $head[$h][0] = dol_buildpath("/mmicrm/prospects.php", 1);
 $head[$h][1] = $langs->trans("MMICRMProspects");
 $head[$h][2] = 'prospects';
+$h++;
+$head[$h][0] = dol_buildpath("/mmicrm/orders.php", 1);
+$head[$h][1] = $langs->trans("MMICRMOrders");
+$head[$h][2] = 'orders';
 
 print load_fiche_titre($langs->trans($page_name), $linkback, 'title_setup');
 print dol_get_fiche_head($head, $page_ref, $langs->trans($page_name), 0, 'mmicrm@mmicrm');

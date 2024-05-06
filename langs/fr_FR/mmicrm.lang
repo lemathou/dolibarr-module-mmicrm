@@ -33,6 +33,7 @@ PROPAL_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les de
 ORDER_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les commandes au statut brouillon
 INVOICE_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les factures au statut brouillon
 MMICRM_USER_MAILFROM_NAME = Champ personnalisé par utilisateur pour le nom de l'expéditeur des emails
+MMICRM_USER_MAILFROM_NAME = Enregistrement des templates utilisés dans les envois d'email
 
 #
 # About page
@@ -49,7 +50,12 @@ MMICRMIndex = CRM
 #
 # Prospects page
 #
-MMICRMProspects = Gestion avancée des clients et prospects
+MMICRMProspects = Clients et prospects
+
+#
+# Orders page
+#
+MMICRMOrders = Commandes
 
 #
 # Fields
@@ -57,4 +63,5 @@ MMICRMProspects = Gestion avancée des clients et prospects
 
 Extrafield_email_sender_name = Expéditeur affiché
 ExtrafieldToolTip_email_sender_name = Lors des envois par email
-
+Extrafield_fk_c_email_template = Modèle d'email
+ExtrafieldToolTip_fk_c_email_template = Utilisé dans les envois d'email

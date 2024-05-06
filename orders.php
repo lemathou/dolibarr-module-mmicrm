@@ -1,5 +1,5 @@
 <?php
-/* Copyright (C) 2023 Mathieu Moulin <mathieu@iprospective.fr>
+/* Copyright (C) 2024 Mathieu Moulin <mathieu@iprospective.fr>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,11 @@
  */
 
 // Load Dolibarr environment
-require_once 'env.inc.php';
 require_once 'main_load.inc.php';
 $langs->load("mmicrm@mmicrm");
 
 $help_url = '';
-$page_name = "MMICRMIndex";
-$page_ref = 'index';
+$page_name = "MMICRMOrders";
+$page_ref = 'orders';
 
 require_once 'page.inc.php';

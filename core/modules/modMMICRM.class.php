@@ -321,6 +321,21 @@ class modMMICRM extends DolibarrModules
 			'target'=>'',
 			'user'=>2,				                // 0=Menu for internal users, 1=external users, 2=both
 		);
+		$this->menu[$r++]=array(
+			'fk_menu'=>'fk_mainmenu=companies,fk_leftmenu=mmicrm',      // '' if this is a top menu. For left menu, use 'fk_mainmenu=xxx' or 'fk_mainmenu=xxx,fk_leftmenu=yyy' where xxx is mainmenucode and yyy is a leftmenucode
+			'type'=>'left',                          // This is a Top menu entry
+			'titre'=>'MMICRMRelances',
+			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+			'mainmenu'=>'companies',
+			'leftmenu'=>'mmicrm',
+			'url'=>'/custom/mmicrm/relances.php',
+			'langs'=>'mmicrm@mmicrm',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position'=>1000+$r,
+			'enabled'=>'$conf->mmicrm->enabled',  // Define condition to show or hide menu entry. Use '$conf->mmiproject->enabled' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->mmicrm->prospects->user',			                // Use 'perms'=>'$user->rights->mmiproject->level1->level2' if you want your menu with a permission rules
+			'target'=>'',
+			'user'=>2,				                // 0=Menu for internal users, 1=external users, 2=both
+		);
 		/* END MODULEBUILDER TOPMENU */
 		/* BEGIN MODULEBUILDER LEFTMENU MYOBJECT
 		$this->menu[$r++]=array(
@@ -442,6 +457,9 @@ class modMMICRM extends DolibarrModules
 
 		// User
         $extrafields->addExtraField('email_sender_name', $langs->trans('Extrafield_email_sender_name'), 'varchar', 100, 48, 'user', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_email_sender_name'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_USER_MAILFROM_NAME');
+
+		// Actioncomm
+        $extrafields->addExtraField('fk_c_email_template', $langs->trans('Extrafield_fk_c_email_template'), 'int', 100, 48, 'actioncom', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_fk_c_email_template'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_EMAIL_TEMPLATE');
 
 		// Permissions
 		$this->remove($options);
