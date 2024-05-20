@@ -34,6 +34,7 @@ ORDER_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les com
 INVOICE_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les factures au statut brouillon
 MMICRM_USER_MAILFROM_NAME = Champ personnalisé par utilisateur pour le nom de l'expéditeur des emails
 MMICRM_USER_MAILFROM_NAME = Enregistrement des templates utilisés dans les envois d'email
+MMICRM_RELANCES = Relances par email/SMS
 
 #
 # About page
@@ -65,3 +66,5 @@ Extrafield_email_sender_name = Expéditeur affiché
 ExtrafieldToolTip_email_sender_name = Lors des envois par email
 Extrafield_fk_c_email_template = Modèle d'email
 ExtrafieldToolTip_fk_c_email_template = Utilisé dans les envois d'email
+Extrafield_relance_disp = Affichage dans les Relances
+ExtrafieldToolTip_relance_disp = Seront affichées dans les EMails, SMS, etc.

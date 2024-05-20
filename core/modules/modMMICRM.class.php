@@ -455,6 +455,9 @@ class modMMICRM extends DolibarrModules
 		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		$extrafields = new ExtraFields($this->db);
 
+		// Category
+        $extrafields->addExtraField('relance_disp', $langs->trans('Extrafield_relance_disp'), 'boolean', 100, "1", 'categorie', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_relance_disp'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_RELANCES');
+
 		// User
         $extrafields->addExtraField('email_sender_name', $langs->trans('Extrafield_email_sender_name'), 'varchar', 100, 48, 'user', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_email_sender_name'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_USER_MAILFROM_NAME');
 

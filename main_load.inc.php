@@ -36,3 +36,6 @@ $moduleclassname = 'mod'.$modulename;
 $moduledir = strtolower($modulename);
 $modulecontext = $moduledir."@".$moduledir;
 $moduleprefix = strtoupper($modulename);
+
+// Loading
+$langs->load($modulecontext);
