@@ -100,7 +100,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 	
 		$object_type = get_class($object);
 		$objectclass = $object_type;
-		$type = $object_type;
+		$type = strtolower($object_type);
 
 		if (static::PROJECT_BY_CAT) {
 			// Catégories de produit dans leslignes
@@ -126,7 +126,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 				}
 				//var_dump();
 			}
-			array_unique($cats);
+			$cats = array_unique($cats);
 			//var_dump($cats); die();
 			if (!empty($cats)) {
 				$projet = ' de '.implode(', ', $cats);
