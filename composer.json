@@ -1,0 +1,17 @@
+{
+    "license": [
+        "GPL-3.0-or-later"
+    ],
+    "authors": [
+        {
+            "name": "Mathieu Moulin",
+            "email": "mathieu@iprospective.fr",
+            "homepage": "https://iprospective.fr",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "shlinkio/shlink-php-sdk": "^2.0",
+        "guzzlehttp/guzzle": "^7.8"
+    }
+}

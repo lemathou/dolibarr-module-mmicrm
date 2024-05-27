@@ -9,7 +9,6 @@ require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/CSMSFile.class.php";
 dol_include_once("/ovh/class/ovhsms.class.php");
 
-
 class mmi_crm_relance extends mmi_generic_1_0
 {
 	const MOD_NAME = 'mmicrm';
@@ -158,7 +157,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//var_dump($commercial);
 
 		// Clé de paiement
-		$securekey = dol_hash($conf->global->PAYMENT_SECURITY_TOKEN.$type.$object->ref, 2);
+		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
+		$payment_url = 'https://erp.dercya.com/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
 
 		// Construction email
 		$_POST['receiver'] = $thirdparty->nom.' <'.$thirdparty->email.'>';
@@ -176,7 +176,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
-			.'https://erp.dercya.com/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey."\r\n\r\n"
+			.$payment_url."\r\n\r\n"
 			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
 			.'Bien cordialement'."\r\n"
 			.'Best regards'."\r\n"."\r\n"
@@ -232,14 +232,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$smsfrom	= 'PISCEEN';
 		$receiver   = 'thirdparty';
 		$sendto		= $thirdparty->phone;
-		if (false) {
-			// Yann
-			$sendto     = '+33671205310';
-			// Samuel
-			$sendto     = '+33768520569';
-			// Mathieu
-			$sendto     = '+33612122470';
-		}
 		$deliveryreceipt= 0;
 		$deferred   = 0;
 		$priority   = 2; // low
@@ -247,9 +239,27 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$errors_to  = '';
 		$nostop		= 1; // A voir c'est de la relance il faut qu'ils puissent stopper... Par ailleurs, comment on a l'info stop concrètement ??
 		
-		$shortlink	= 'https://sms.pisceen.com/';
-		$body		= 'Bonjour 👋, c’est '.(!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')).''."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72.00 '.$shortlink."\r\n".'N’hésitez pas à me rappeler '.$commercial['office_phone']."\r\n".'Belle journée ☀️';
+		$object_type = get_class($object);
+		$type = strtolower($object_type);
+		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
+		$payment_url = $GLOBALS['dolibarr_main_url_root'].'/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
 
+		if (getDolGlobalString('MMICRM_SHLINK_SCRIPT')) {
+			$shlink_command = '/usr/bin/php8.2 -f '.DOL_DOCUMENT_ROOT.'/custom/mmicrm/scripts/shlink.php "'.$payment_url.'"'; // 2>&1
+			//var_dump($shlink_command);
+			$shorturl = exec($shlink_command, $shlink_output, $shlink_result);
+			//var_dump($shlink_result, $shlink_output);
+			//var_dump($shorturl);
+			$shorturl = str_replace('http://', 'https://', $shorturl);
+		}
+		else {
+			dol_include_once("/mmicrm/class/mmi_shlink.class.php");
+			$shortlink = mmi_shlink::generate($payment_url);
+			$shorturl = str_replace('http://', 'https://', $shortlink->shortUrl);
+		}
+		$body		= 'Bonjour 👋, c’est '.(!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')).''."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures '.$shorturl."\r\n".'N’hésitez pas à me rappeler '.$commercial['office_phone']."\r\n".'Belle journée ☀️';
+		//var_dump($body); die();
+		
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
 			$sendto=$thirdparty->contact_get_property($receiver, 'mobile');
 		}

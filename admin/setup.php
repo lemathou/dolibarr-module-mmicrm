@@ -32,8 +32,12 @@ $arrayofparameters = array(
 	'ORDER_DRAFT_MASSACTION_CAN_SEND'=>array('type'=>'yesno', 'enabled'=>1),
 	'INVOICE_DRAFT_MASSACTION_CAN_SEND'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_USER_MAILFROM_NAME'=>array('type'=>'yesno', 'enabled'=>1),
-	'MMICRM_EMAIL_TEMPLATE'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMICRM_RELANCES_SEP'=>array('type'=>'separator', 'enabled'=>1),
 	'MMICRM_RELANCES'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMICRM_EMAIL_TEMPLATE'=>array('type'=>'string', 'enabled'=>1),
+	'MMICRM_SHLINK_URL'=>array('type'=>'string', 'enabled'=>1),
+	'MMICRM_SHLINK_KEY'=>array('type'=>'securekey', 'enabled'=>1),
+	'MMICRM_SHLINK_SCRIPT'=>array('type'=>'yesno', 'enabled'=>1),
 );
 
 require_once('../../mmicommon/admin/mmisetup_1.inc.php');
