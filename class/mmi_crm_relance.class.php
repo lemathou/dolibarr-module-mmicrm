@@ -158,7 +158,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Clé de paiement
 		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
-		$payment_url = 'https://erp.dercya.com/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
+		$payment_url = $GLOBALS['dolibarr_main_url_root'].'/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
 
 		// Construction email
 		$_POST['receiver'] = $thirdparty->nom.' <'.$thirdparty->email.'>';
@@ -173,7 +173,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		}
 		$_POST['subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
 		$_POST['message'] = 'Bonjour'.(true ?' '.$thirdparty->nom :'').",\r\n\r\n"
-			.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+			.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72 heures.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
 			.$payment_url."\r\n\r\n"
@@ -192,9 +192,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			echo '<p>TO: <strong>'.htmlspecialchars($_POST['receiver']).'</strong></p>';
 			echo '<p>SUBJECT: <strong>'.$_POST['subject'].'</strong></p>';
 			echo '<pre>'.$_POST['message'].'</pre>';
-			return;
+			//return;
 		}
 		if ($send) {
+			echo '<p><b>send</b></p>';
 			$toselect = [$object->id];
 			$uploaddir = DOL_DOCUMENT_ROOT.'/../documents/propale';
 			require DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
@@ -257,7 +258,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$shortlink = mmi_shlink::generate($payment_url);
 			$shorturl = str_replace('http://', 'https://', $shortlink->shortUrl);
 		}
-		$body		= 'Bonjour 👋, c’est '.(!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')).''."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures '.$shorturl."\r\n".'N’hésitez pas à me rappeler '.$commercial['office_phone']."\r\n".'Belle journée ☀️';
+		$body		= 'Bonjour 👋, c’est '.(!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')).''."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures.'."\r\n".$shorturl."\r\n".'N’hésitez pas à me rappeler '.$commercial['office_phone']."\r\n".'Belle journée ☀️';
 		//var_dump($body); die();
 		
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
@@ -300,7 +301,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 				echo '<p><i>SMS</i></p>';
 				echo '<p><strong>'.$sendto.'</strong></p>';
 				echo '<pre>'.$body.'</pre>';
-				return;
+				//return;
 			}
 			if ($send) {
 				//if (empty($sendcontext)) $sendcontext = 'standard';
