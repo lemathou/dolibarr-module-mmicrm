@@ -35,6 +35,7 @@ $arrayofparameters = array(
 	'MMICRM_RELANCES_SEP'=>array('type'=>'separator', 'enabled'=>1),
 	'MMICRM_RELANCES'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_EMAIL_TEMPLATE'=>array('type'=>'string', 'enabled'=>1),
+	'MMICRM_SMS_CLEAN_UNCIODE'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_SHLINK_URL'=>array('type'=>'string', 'enabled'=>1),
 	'MMICRM_SHLINK_KEY'=>array('type'=>'securekey', 'enabled'=>1),
 	'MMICRM_SHLINK_SCRIPT'=>array('type'=>'yesno', 'enabled'=>1),

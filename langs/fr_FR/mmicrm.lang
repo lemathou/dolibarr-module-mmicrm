@@ -37,6 +37,7 @@ MMICRM_USER_MAILFROM_NAME = Enregistrement des templates utilisés dans les envo
 MMICRM_RELANCES_SEP = Relances email et SMS
 MMICRM_RELANCES = Activer relances par email/SMS
 MMICRM_EMAIL_TEMPLATE = Template utilisé pour les relances email
+MMICRM_SMS_CLEAN_UNCIODE = Nettoyer les caractères unicode interdit dans les envois de SMS
 MMICRM_SHLINK_URL = Adresse serveur Shlink
 MMICRM_SHLINK_KEY = Clé API serveur Shlink
 MMICRM_SHLINK_SCRIPT = Execution de l'API Shlink via une commande en PHP 8.2
