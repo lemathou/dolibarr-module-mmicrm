@@ -159,6 +159,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// Clé de paiement
 		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
 		$payment_url = $GLOBALS['dolibarr_main_url_root'].'/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
+		// Clé de refus
+		$signtype = $type==='propal' ?'proposal' :'';
+		$securekey = dol_hash(getDolGlobalString('PROPOSAL_ONLINE_SIGNATURE_SECURITY_TOKEN').$signtype.$object->ref, 2);
+		$refuse_url = $GLOBALS['dolibarr_main_url_root'].'/public/onlinesign/newonlinesign.php?source=proposal&ref='.$object->ref.'&securekey='.$securekey;
 
 		// Construction email
 		$_POST['receiver'] = $thirdparty->nom.' <'.$thirdparty->email.'>';
@@ -172,11 +176,13 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$_POST['fromtype'] = 'company';
 		}
 		$_POST['subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-		$_POST['message'] = 'Bonjour'.(true ?' '.$thirdparty->nom :'').",\r\n\r\n"
+		$_POST['message'] = 'Bonjour'.(false ?' '.$thirdparty->nom :'').",\r\n\r\n"
 			.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72 heures.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
 			.$payment_url."\r\n\r\n"
+			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+			.$refuse_url."\r\n\r\n"
 			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
 			.'Bien cordialement'."\r\n"
 			.'Best regards'."\r\n"."\r\n"
