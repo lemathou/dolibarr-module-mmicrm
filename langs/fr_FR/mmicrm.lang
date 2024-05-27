@@ -34,6 +34,8 @@ ORDER_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les com
 INVOICE_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les factures au statut brouillon
 MMICRM_USER_MAILFROM_NAME = Champ personnalisé par utilisateur pour le nom de l'expéditeur des emails
 MMICRM_USER_MAILFROM_NAME = Enregistrement des templates utilisés dans les envois d'email
+MMICRM_PROPAL_HIDE_SIGN = Masquer la possibilité de signer la propale par le client
+
 MMICRM_RELANCES_SEP = Relances email et SMS
 MMICRM_RELANCES = Activer relances par email/SMS
 MMICRM_EMAIL_TEMPLATE = Template utilisé pour les relances email
