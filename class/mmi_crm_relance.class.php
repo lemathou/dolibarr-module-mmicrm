@@ -18,10 +18,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 	// Expération dans plus de ... jours
 	const DAYS_MAX = 3;
 	// Pas de relance depuis ... jouts
-	const DAYS_LASTMAIL = 10;
+	const DAYS_LASTMAIL = 0;
 
 	// Max envoi simultané
-	const RELANCE_MAX = 5;
+	const RELANCE_MAX = 50;
 
 	// Qualifier le projet par les catégorie des produits du devis
 	const PROJECT_BY_CAT = false;
@@ -66,6 +66,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// Group send
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
+		echo '<p>Total : '.$nb_total.'</p>';
 		//var_dump($nb_total); die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
