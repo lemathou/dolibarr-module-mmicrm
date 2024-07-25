@@ -316,6 +316,7 @@ foreach($l as $row) {
 	echo '<td class="num">'.$row['k_nb'].'</td>';
 	echo '<td class="num"><a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a></td>';
 	echo '<td class="num"><a href="/ccomm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a></td>';
+	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
 	echo '</tr>';
 }
 echo '</table>';
