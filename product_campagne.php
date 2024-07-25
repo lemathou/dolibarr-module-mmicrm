@@ -16,7 +16,7 @@
  */
 
 /**
- * \file    mmicrm/relances.php
+ * \file    mmicrm/campagne.php
  * \ingroup mmicrm
  * \brief   About page of module MMICRM.
  */
@@ -27,6 +27,6 @@ require_once 'main_load.inc.php';
 
 $help_url = '';
 $page_name = "MMICRMRelances";
-$page_ref = 'relances';
+$page_ref = 'product_campagne';
 
 require_once 'page.inc.php';

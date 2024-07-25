@@ -9,6 +9,8 @@ require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/CSMSFile.class.php";
 dol_include_once("/ovh/class/ovhsms.class.php");
 
+dol_include_once("/mmicommon/class/mmi_generic.class.php");
+
 class mmi_crm_relance extends mmi_generic_1_0
 {
 	const MOD_NAME = 'mmicrm';
@@ -19,6 +21,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 	const DAYS_MAX = 3;
 	// Pas de relance depuis ... jouts
 	const DAYS_LASTMAIL = 0;
+	// Date mini des propales à relancer
+	const DATE_MIN = '2024-01-01';
 
 	// Max envoi simultané
 	const RELANCE_MAX = 50;
@@ -30,6 +34,93 @@ class mmi_crm_relance extends mmi_generic_1_0
 	// Templates
 	const PROPAL_RELANCE_EMAIL_TPL = 1;
 	const PROPAL_RELANCE_SMS_TPL = 1;
+
+	public static function map($map, $string)
+	{
+		$map_from = $map_to = [];
+		foreach($map as $key=>$value) {
+			$map_from[] = '{$'.$key.'}';
+			$map_to[] = $value;
+		}
+		//var_dump($map_from, $map_to);
+		return str_replace($map_from, $map_to, $string);
+	}
+
+	public static function propal_product_campagne($options=[], $date_from=NULL)
+	{
+		global $user, $db;
+
+		if (is_null($date_from))
+			$date_from = static::DATE_MIN;
+		//var_dump($days);
+
+		// Devis ouverts,
+		// échus dans un intervalle entre $days_min et $days_max jours,
+		// sans relance depuis DAYS_LASTMAIL jours
+		// sans commande associée
+		//, , DATEDIFF(d.fin_validite, NOW()) AS datediff
+		$sql = 'SELECT DISTINCT d.rowid
+			FROM '.MAIN_DB_PREFIX.'propal d
+			INNER JOIN '.MAIN_DB_PREFIX.'societe s
+				ON s.rowid=d.fk_soc
+			LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm am
+				ON am.code = "AC_PROPAL_SENTBYMAIL" AND am.elementtype="propal" AND am.fk_element=d.rowid
+				AND DATEDIFF(am.datec, NOW()) >= -'.static::DAYS_LASTMAIL.'
+			LEFT JOIN '.MAIN_DB_PREFIX.'element_element dc
+				ON dc.sourcetype="propal" AND dc.fk_source=d.rowid AND dc.targettype="commande"
+			WHERE d.fk_statut=1
+				AND d.fin_validite >= "'.$date_from.'"
+				'.(!empty($options['ref_client']) ?' AND d.ref_client LIKE "'.$options['ref_client'].'"' :'').'
+				AND am.id IS NULL
+				AND dc.rowid IS NULL
+			GROUP BY d.rowid';
+		echo '<pre>'.$sql.'</pre>';
+		// Count
+
+		// Email Overload
+		$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
+		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
+			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité je vous informe de conditions très intéressantes proposées par notre fabricant, valable sur les 150 premières commandes validées entre le 26 juillet et le 15 août 2024.'."\r\n\r\n"
+			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+			.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
+			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+			.'{$refuse_url}'."\r\n\r\n"
+			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
+			.'Bien cordialement'."\r\n"
+			.'Best regards'."\r\n"."\r\n"
+			.'{$commercial_name}'."\r\n"
+			.'Email : {$commercial_email}'."\r\n"
+			.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
+			.'{$website_url}'."\r\n";
+		$options['email_subject'] = $email_subject;
+		$options['email_message'] = $email_message;
+
+		// SMS Overload
+		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet pour votre piscine. Je vous informe que nous avons des conditions fabricant super intéressantes sur les 150 premières commandes validées du 26 juillet au 15 août 2024. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$options['sms_message'] = $sms_message;
+
+		// Group send
+		$q = $db->query($sql);
+		$nb_total = $q->num_rows;
+		echo '<p>Total : '.$nb_total.'</p>';
+		//var_dump($nb_total); die();
+		$nb = 0;
+		while(list($id)=$q->fetch_row()) {
+			//var_dump($id);
+			$object = new Propal($db);
+			$object->fetch($id);
+			$object->fetch_thirdparty();
+			// c_email_templates
+			if (!empty($options['email']))
+				static::object_sendmail_template($user, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
+			if (!empty($options['sms']))
+				static::object_sendsms($user, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
+
+			$nb++;
+			if ($nb>=static::RELANCE_MAX)
+				break;
+		}
+	}
 
 	public static function propal_relance_valid_between_days($options=[], $days_max=NULL, $days_min=NULL)
 	{
@@ -62,6 +153,29 @@ class mmi_crm_relance extends mmi_generic_1_0
 			GROUP BY d.rowid';
 		echo '<pre>'.$sql.'</pre>';
 		// Count
+
+		// Email Overload
+		$email_subject = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
+			.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72 heures.'."\r\n\r\n"
+			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
+			.'{$payment_url}'."\r\n\r\n"
+			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+			.'{$refuse_url}'."\r\n\r\n"
+			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
+			.'Bien cordialement'."\r\n"
+			.'Best regards'."\r\n"."\r\n"
+			.'{$commercial_name}'."\r\n"
+			.'Email : {$commercial_email}'."\r\n"
+			.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
+			.'{$website_url}'."\r\n";
+		$options['email_subject'] = $email_subject;
+		$options['email_message'] = $email_message;
+
+		// SMS Overload
+		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$options['sms_message'] = $sms_message;
 
 		// Group send
 		$q = $db->query($sql);
@@ -176,21 +290,20 @@ class mmi_crm_relance extends mmi_generic_1_0
 		else {
 			$_POST['fromtype'] = 'company';
 		}
-		$_POST['subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-		$_POST['message'] = 'Bonjour'.(false ?' '.$thirdparty->nom :'').",\r\n\r\n"
-			.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72 heures.'."\r\n\r\n"
-			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
-			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
-			.$payment_url."\r\n\r\n"
-			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
-			.$refuse_url."\r\n\r\n"
-			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
-			.'Bien cordialement'."\r\n"
-			.'Best regards'."\r\n"."\r\n"
-			.$commercial['firstname'].($commercial['lastname'] ?' '.$commercial['lastname'] :'')."\r\n"
-			.$commercial['email']."\r\n"
-			.'TEL: '.$commercial['office_phone']."\r\n"."\r\n"
-			.'https://pisceen.com'."\r\n";
+
+		// Message
+		$message_map = [
+			'customer_name' => (false ?' '.$thirdparty->nom :''),
+			'devis_ref' => $object->ref,
+			'payment_url' => $payment_url,
+			'refuse_url' => $refuse_url,
+			'commercial_name' => $commercial['firstname'].($commercial['lastname'] ?' '.$commercial['lastname'] :''),
+			'commercial_email' => $commercial['email'],
+			'commercial_tel' => $commercial['office_phone'],
+			'website_url' => 'https://pisceen.com',
+		];
+		$_POST['subject'] = $options['email_subject'];
+		$_POST['message'] = static::map($message_map, $options['email_message']);
 		
 		if($recap) {
 			echo '<hr />';
@@ -246,26 +359,39 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$class      = 1; // Type: Standard
 		$errors_to  = '';
 		$nostop		= 1; // A voir c'est de la relance il faut qu'ils puissent stopper... Par ailleurs, comment on a l'info stop concrètement ??
-		
+		$pay_link_gen   = empty($options['nopaylink']);
+
 		$object_type = get_class($object);
 		$type = strtolower($object_type);
 		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
 		$payment_url = $GLOBALS['dolibarr_main_url_root'].'/public/payment/newpayment.php?source=propal&ref='.$object->ref.'&securekey='.$securekey;
 
-		if (getDolGlobalString('MMICRM_SHLINK_SCRIPT')) {
-			$shlink_command = '/usr/bin/php8.2 -f '.DOL_DOCUMENT_ROOT.'/custom/mmicrm/scripts/shlink.php "'.$payment_url.'"'; // 2>&1
-			//var_dump($shlink_command);
-			$shorturl = exec($shlink_command, $shlink_output, $shlink_result);
-			//var_dump($shlink_result, $shlink_output);
-			//var_dump($shorturl);
-			$shorturl = str_replace('http://', 'https://', $shorturl);
+		if ($pay_link_gen) {
+			if (getDolGlobalString('MMICRM_SHLINK_SCRIPT')) {
+				$shlink_command = '/usr/bin/php8.2 -f '.DOL_DOCUMENT_ROOT.'/custom/mmicrm/scripts/shlink.php "'.$payment_url.'"'; // 2>&1
+				//var_dump($shlink_command);
+				$shorturl = exec($shlink_command, $shlink_output, $shlink_result);
+				//var_dump($shlink_result, $shlink_output);
+				//var_dump($shorturl);
+				$shorturl = str_replace('http://', 'https://', $shorturl);
+			}
+			else {
+				dol_include_once("/mmicrm/class/mmi_shlink.class.php");
+				$shortlink = mmi_shlink::generate($payment_url);
+				$shorturl = str_replace('http://', 'https://', $shortlink->shortUrl);
+			}
 		}
 		else {
-			dol_include_once("/mmicrm/class/mmi_shlink.class.php");
-			$shortlink = mmi_shlink::generate($payment_url);
-			$shorturl = str_replace('http://', 'https://', $shortlink->shortUrl);
+			$shorturl = '';
 		}
-		$body		= 'Bonjour 👋, c’est '.(!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')).''."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures.'."\r\n".$shorturl."\r\n".'N’hésitez pas à me rappeler '.$commercial['office_phone']."\r\n".'Belle journée ☀️';
+
+		// Message
+		$message_map = [
+			'commercial_website_name' => (!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')),
+			'shorturl' => $shorturl,
+			'commercial_tel' => $commercial['office_phone'],
+		];
+		$body = static::map($message_map, $options['sms_message']);
 		//var_dump($body); die();
 		
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
