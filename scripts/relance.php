@@ -10,9 +10,9 @@ dol_include_once('mmicrm/class/mmi_crm_relance.class.php');
 
 $relance_options = [
 	'email' => 1,
-	//'sms' => 1,
-	'recap' => 1,
-	//'email_send' => 1,
+	'sms' => 1,
+	//'recap' => 1,
+	'email_send' => 1,
 ];
 
 mmi_crm_relance::propal_relance_valid_between_days($relance_options);
