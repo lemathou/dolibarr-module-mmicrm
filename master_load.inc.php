@@ -1,5 +1,7 @@
 <?php
 
+require_once('env.inc.php');
+
 if (!defined('NOSESSION')) {
 	define('NOSESSION', '1');
 }
