@@ -46,13 +46,12 @@ class mmi_crm_relance extends mmi_generic_1_0
 		return str_replace($map_from, $map_to, $string);
 	}
 
-	public static function propal_product_campagne($options=[], $date_from=NULL)
+	public static function propal_product_campagne($options=[])
 	{
 		global $user, $db;
 
-		if (is_null($date_from))
-			$date_from = static::DATE_MIN;
-		//var_dump($days);
+		if (! isset($options['date_validite_debut']))
+			$options['date_validite_debut'] = static::DATE_MIN;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -60,7 +59,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// sans commande associée
 		//, , DATEDIFF(d.fin_validite, NOW()) AS datediff
 		$sql = 'SELECT DISTINCT d.rowid
-			FROM '.MAIN_DB_PREFIX.'propal d
+		FROM '.MAIN_DB_PREFIX.'propal d
+			INNER JOIN '.MAIN_DB_PREFIX.'propaldet dl ON dl.fk_propal=d.rowid
+			INNER JOIN '.MAIN_DB_PREFIX.'product p ON p.rowid=dl.fk_product
+			LEFT JOIN '.MAIN_DB_PREFIX.'categorie_product cp ON cp.fk_product=p.rowid
 			INNER JOIN '.MAIN_DB_PREFIX.'societe s
 				ON s.rowid=d.fk_soc
 			LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm am
@@ -69,8 +71,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			LEFT JOIN '.MAIN_DB_PREFIX.'element_element dc
 				ON dc.sourcetype="propal" AND dc.fk_source=d.rowid AND dc.targettype="commande"
 			WHERE d.fk_statut=1
-				AND d.fin_validite >= "'.$date_from.'"
 				'.(!empty($options['ref_client']) ?' AND d.ref_client LIKE "'.$options['ref_client'].'"' :'').'
+				'.(!empty($options['fk_categorie']) ?' AND cp.fk_categorie="'.$options['fk_categorie'].'"' :'').'
+				'.(!empty($options['date_validite_debut']) ?' AND d.fin_validite >= "'.$options['date_validite_debut'].'"' :'').'
+				'.(!empty($options['date_validite_fin']) ?' AND d.fin_validite <= "'.$options['date_validite_fin'].'"' :'').'
 				AND am.id IS NULL
 				AND dc.rowid IS NULL
 			GROUP BY d.rowid';
@@ -80,7 +84,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// Email Overload
 		$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
 		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité je vous informe de conditions très intéressantes proposées par notre fabricant, valable sur les 150 premières commandes validées entre le 26 juillet et le 15 août 2024.'."\r\n\r\n"
+			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité je vous informe de conditions très intéressantes proposées par notre fabricant français, valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
 			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
@@ -96,14 +100,14 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet pour votre piscine. Je vous informe que nous avons des conditions fabricant super intéressantes sur les 150 premières commandes validées du 26 juillet au 15 août 2024. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je vous informe que nous avons des conditions fabricant super intéressantes sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 
 		// Group send
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
-		//var_dump($nb_total); die();
+		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
 			//var_dump($id);
