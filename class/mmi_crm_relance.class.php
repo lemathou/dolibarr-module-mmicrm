@@ -101,7 +101,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 		$options['nopaylink'] = true;
 
@@ -181,7 +181,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 
 		// Group send
