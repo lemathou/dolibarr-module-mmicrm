@@ -101,7 +101,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 		$options['nopaylink'] = true;
 
@@ -398,6 +398,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'commercial_website_name' => (!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')),
 			'shorturl' => $shorturl,
 			'commercial_tel' => $commercial['office_phone'],
+			'commercial_email' => $commercial['email'],
 			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$body = static::map($message_map, $options['sms_message']);
