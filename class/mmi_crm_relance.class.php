@@ -71,6 +71,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			WHERE d.fk_statut=1
 				AND d.fin_validite >= "'.$date_from.'"
 				'.(!empty($options['ref_client']) ?' AND d.ref_client LIKE "'.$options['ref_client'].'"' :'').'
+				'.(!empty($options['rowid']) && is_numeric($options['rowid']) ?' AND d.rowid = "'.$options['rowid'].'"' :'').'
 				AND am.id IS NULL
 				AND dc.rowid IS NULL
 			GROUP BY d.rowid';
@@ -98,6 +99,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// SMS Overload
 		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet pour votre piscine. Je vous informe que nous avons des conditions fabricant super intéressantes sur les 150 premières commandes validées du 26 juillet au 15 août 2024. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
+		$options['nopaylink'] = true;
 
 		// Group send
 		$q = $db->query($sql);
@@ -126,10 +128,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 	{
 		global $user, $db;
 
-		if (is_null($days_max))
-			$days_max = static::DAYS_MAX;
-		if (is_null($days_min))
-			$days_min = static::DAYS_MIN;
+		if (is_null($options['days_max']))
+			$options['days_max'] = static::DAYS_MAX;
+		if (is_null($options['days_min']))
+			$options['days_min'] = static::DAYS_MIN;
 		//var_dump($days);
 
 		// Devis ouverts,
@@ -147,17 +149,18 @@ class mmi_crm_relance extends mmi_generic_1_0
 			LEFT JOIN '.MAIN_DB_PREFIX.'element_element dc
 				ON dc.sourcetype="propal" AND dc.fk_source=d.rowid AND dc.targettype="commande"
 			WHERE d.fk_statut=1
-				AND DATEDIFF(d.fin_validite, NOW()) >= '.$days_min.' AND DATEDIFF(d.fin_validite, NOW()) <= '.$days_max.'
+				AND DATEDIFF(d.fin_validite, NOW()) >= '.$options['days_min'].' AND DATEDIFF(d.fin_validite, NOW()) <= '.$options['days_max'].'
 				AND am.id IS NULL
 				AND dc.rowid IS NULL
 			GROUP BY d.rowid';
 		echo '<pre>'.$sql.'</pre>';
+		//die();
 		// Count
 
 		// Email Overload
 		$email_subject = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
 		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-			.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans 72 heures.'."\r\n\r\n"
+			.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans {$echeance_heures} heures.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
 			.'{$payment_url}'."\r\n\r\n"
@@ -174,14 +177,14 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable 72 heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 
 		// Group send
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
-		//var_dump($nb_total); die();
+		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
 			//var_dump($id);
@@ -301,6 +304,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'commercial_email' => $commercial['email'],
 			'commercial_tel' => $commercial['office_phone'],
 			'website_url' => 'https://pisceen.com',
+			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$_POST['subject'] = $options['email_subject'];
 		$_POST['message'] = static::map($message_map, $options['email_message']);
@@ -390,6 +394,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'commercial_website_name' => (!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')),
 			'shorturl' => $shorturl,
 			'commercial_tel' => $commercial['office_phone'],
+			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$body = static::map($message_map, $options['sms_message']);
 		//var_dump($body); die();
