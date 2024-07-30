@@ -2,6 +2,12 @@
 	.num {
 		text-align: right;
 	}
+	td.cmd {
+		background-color: #ffc;
+	}
+	td.rel {
+		background-color: #fcf;
+	}
 </style>
 <?php
 
@@ -14,14 +20,23 @@ $sql_where = [];
 $sql_having = [];
 
 echo '<form method="GET">';
-echo '<p>Raccourcis :</p>';
-echo '<table border="1">';
+echo '<p>Raccourcis :';
+echo ' <a href="?">TOUT</a>';
+echo ' | <a href="?filters[cmd_nb_min]=1&filters[cmd_nb_max]=1">Une seule commande</a>';
+echo ' | <a href="?filters[prospect]=prospect&filters[relance_max]=1">Prospect une seule relance</a>';
+echo '</p>';
+echo '<p><a href="javascript:;" onclick="$(\'#filters\').toggle()">Afficher/Cacher les filtres</a></p>';
+echo '<table id="filters" border="1" style="display:none;">';
 
+echo '<thead>';
 echo '<tr>';
-echo '<td>Filtrer</td>';
-echo '<td>Trier</td>';
+echo '<th>Filtrer</th>';
+echo '<th>Afficher</th>';
+echo '<th>Trier</th>';
 echo '</tr>';
+echo '</thead>';
 
+echo '<tbody>';
 echo '<tr>';
 
 $join_list = [
@@ -38,7 +53,7 @@ $filter_list = [
 				'sql_join' => 'c',
 				'sql_where' => 'c.fk_soc IS NOT NULL',
 			],
-			'Prospect' =>  [
+			'prospect' =>  [
 				'label' => 'Prospect',
 				'sql_join' => 'c',
 				'sql_where' => 'c.fk_soc IS NULL',
@@ -51,6 +66,18 @@ $filter_list = [
 		'sql_join' => 'c',
 		'sql_having' => 'SUM(c.total_ht) > %value',
 	],
+	'cmd_nb_min' => [
+		'label' => 'Nb commandes min',
+		'type' => 'int',
+		'sql_join' => 'c',
+		'sql_having' => 'COUNT(DISTINCT c.rowid) >= %value',
+	],
+	'cmd_nb_max' => [
+		'label' => 'Nb commandes max',
+		'type' => 'int',
+		'sql_join' => 'c',
+		'sql_having' => 'COUNT(DISTINCT c.rowid) <= %value',
+	],
 	'relance_histo' => [
 		'label' => 'Pas relancé depuis n mois',
 		'type' => 'int',
@@ -58,10 +85,22 @@ $filter_list = [
 		'sql_where' => 'k.fk_soc IS NULL',
 	],
 	'relance_not_before_cmd' => [
-		'label' => 'Pas relancé depuis dernière cmd (beta)',
+		'label' => 'Pas relancé depuis dernière commande',
 		'type' => 'bool',
+		'sql_join' => ['c'=>'1', 'k'=>'DATE(k.date_creation) >= DATE(c.date_commande)'], // Pas évident, la table peut service à plusieurs cas de figures
+		'sql_having' => 'COUNT(k.fk_soc) = 0',
+	],
+	'relance_min' => [
+		'label' => 'Relancé au moins n fois',
+		'type' => 'int',
 		'sql_join' => 'k', // Pas évident, la table peut service à plusieurs cas de figures
-		'sql_where' => 'k.fk_soc IS NULL',
+		'sql_having' => 'COUNT(k.rowid) >= %value',
+	],
+	'relance_max' => [
+		'label' => 'Relancé au max n fois',
+		'type' => 'int',
+		'sql_join' => 'k', // Pas évident, la table peut service à plusieurs cas de figures
+		'sql_having' => 'COUNT(k.rowid) <= %value',
 	],
 	'relance_next' => [
 		'type' => 'radio',
@@ -92,27 +131,43 @@ echo '<td>';
 foreach($filter_list as $i=>$j) {
 	if ($j['type']=='radio') {
 		echo '<input id="filter_'.$i.'_all" type="radio" name="filters['.$i.']" value="" /> <label for="filter_'.$i.'_all">TOUT</label><br />';
-		foreach($j['list'] as $k=>$l) {
-			if (!empty($filters[$i]) && $filters[$i]==$k) {
+		foreach($j['list'] as $i2=>$j2) {
+			if (!empty($filters[$i]) && $filters[$i]==$i2) {
 				$checked = ' checked';
-				if (!empty($l['sql_join']))
-					$sql_join[$l['sql_join']] = $join_list[$l['sql_join']];
-				if (!empty($l['sql_where']))
-					$sql_where[] = $l['sql_where'];
-				if (!empty($l['sql_having']))
-					$sql_having[] = $l['sql_having'];
+				if (!empty($j2['sql_join'])) {
+					if (is_string($j2['sql_join'])) {
+						$sql_join[$j2['sql_join']] = $join_list[$j2['sql_join']];
+					}
+					elseif (is_array($j2['sql_join'])) {
+						foreach($j2['sql_join'] as $k=>$l) {
+							$sql_join[$k] = $join_list[$k].' AND '.$l;
+						}
+					}
+				}
+				if (!empty($j2['sql_where']))
+					$sql_where[] = $j2['sql_where'];
+				if (!empty($j2['sql_having']))
+					$sql_having[] = $j2['sql_having'];
 			}
 			else {
 				$checked = '';
 			}
-			echo '<input id="filter_'.$i.'_'.$k.'" type="radio" name="filters['.$i.']"'.$checked.' value="'.$k.'" /> <label for="filter_'.$i.'_'.$k.'">'.$l['label'].'</label><br />';
+			echo '<input id="filter_'.$i.'_'.$i2.'" type="radio" name="filters['.$i.']"'.$checked.' value="'.$i2.'" /> <label for="filter_'.$i.'_'.$i2.'">'.$j2['label'].'</label><br />';
 		}
 	}
 	elseif ($j['type']=='int') {
-		if (!empty($filters[$i])) {
+		if (isset($filters[$i]) && is_numeric($filters[$i])) {
 			$value = $filters[$i];
-			if (!empty($j['sql_join']))
-				$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+			if (!empty($j['sql_join'])) {
+				if (is_string($j['sql_join'])) {
+					$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+				}
+				elseif(is_array($j['sql_join'])) {
+					foreach($j['sql_join'] as $k=>$l) {
+						$sql_join[$k] = $join_list[$k].' AND '.$l;
+					}
+				}
+			}
 			if (!empty($j['sql_where']))
 				$sql_where[] = str_replace('%value', $value, $j['sql_where']);
 			if (!empty($j['sql_having']))
@@ -125,10 +180,18 @@ foreach($filter_list as $i=>$j) {
 		echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.$value.'" size="5" /><br />';
 	}
 	elseif ($j['type']=='checkbox' || $j['type']=='bool') {
-		if (!empty($filters[$i])) {
+		if (isset($filters[$i]) && $filters[$i]!='') {
 			$checked = ' checked';
-			if (!empty($j['sql_join']))
-				$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+			if (!empty($j['sql_join'])) {
+				if (is_string($j['sql_join'])) {
+					$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+				}
+				elseif(is_array($j['sql_join'])) {
+					foreach($j['sql_join'] as $k=>$l) {
+						$sql_join[$k] = $join_list[$k].' AND '.$l;
+					}
+				}
+			}
 			if (!empty($j['sql_where']))
 				$sql_where[] = $j['sql_where'];
 			if (!empty($j['sql_having']))
@@ -136,12 +199,29 @@ foreach($filter_list as $i=>$j) {
 
 		}
 		else {
-			$value = '';
+			$checked = '';
 		}
 		echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="checkbox" name="filters['.$i.']" value="1"'.$checked.' /><br />';
 	}
 }
 echo '</td>';
+
+$cols_list = [
+	'cmd_tot_mt' => ['label'=>'Commandes : Montant total'],
+];
+$cols = GETPOST('cols', 'array');
+echo '<td>Colonnes supplémentaires :<br /><select name="cols[]" multiple>';
+foreach($cols_list as $i=>$j) {
+	if (in_array($i, $cols)) {
+		$selected = ' selected';
+	}
+	else {
+		$selected = '';
+	}
+	echo '<option value="'.$i.'"'.$selected.'>'.$j['label'].'</option>';
+}
+echo '</select></td>';
+
 $sort_list = [
 	'nom' => [
 		'label' => 'Nom',
@@ -156,6 +236,11 @@ $sort_list = [
 		'label' => 'Prochaine relance',
 		'sql_join' => 'a',
 		'sql_order' => 'MAX(a.datep) ASC',
+	],
+	'commandes_nb' => [
+		'label' => 'Nb commandes',
+		'sql_join' => 'c',
+		'sql_order' => 'COUNT(DISTINCT c.rowid) DESC',
 	],
 	'commande_last' => [
 		'label' => 'Dernière commande',
@@ -180,6 +265,7 @@ foreach($sort_list as $i=>$j) {
 echo '</select></td>';
 echo '<td><input type="submit" value="Actualiser" /></td>';
 echo '</tr>';
+echo '</tbody>';
 echo '</table>';
 echo '</form>';
 
@@ -202,7 +288,7 @@ $sql = 'SELECT s.rowid, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
 	'.($sql_order  ?'ORDER BY '.$sql_order :'').'
 	LIMIT '.$sql_begin.', '.$sql_limit.'
 ';
-//echo $sql;
+//echo '<pre>'.$sql.'</pre>';
 $q = $db->query($sql);
 //var_dump($q);
 echo '<p>'.$q->num_rows.' enregistrements</p>';
@@ -282,26 +368,35 @@ function date_fromsql($date)
 	return implode('/', $e);
 }
 
-
+$filters_url = '';
+foreach($filters as $i=>$j) {
+	$filters_url .= '&filters['.$i.']='.$j;
+}
+foreach($cols as $i=>$j) {
+	$filters_url .= '&cols['.$i.']='.$j;
+}
+//var_dump($filters_url); die();
 
 echo '<table border="1" cellpadding="2">';
 echo '<tr>';
-echo '<th rowspan="2">Client</th>';
+echo '<th rowspan="2"><a href="?'.$filters_url.'&sort=nom">U</a> Client</th>';
 echo '<th rowspan="2">Nom alternatif</th>';
 echo '<th rowspan="2">Groupe</th>';
 echo '<th rowspan="2">Ville</th>';
-echo '<th colspan="2">Total commandes</th>';
+echo '<th colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
 echo '<th colspan="3">Relances</th>';
 echo '</tr>';
+
 echo '<tr>';
-echo '<th>Nbre</th>';
-echo '<th>Montant</th>';
-echo '<th>Date</th>';
+echo '<th><a href="?'.$filters_url.'&sort=commandes_nb">U</a> Nbre</th>';
+if (in_array('cmd_tot_mt', $cols))
+	echo '<th>Montant</th>';
+echo '<th><a href="?'.$filters_url.'&sort=commande_last">U</a> Date</th>';
 echo '<th>Montant</th>';
 echo '<th>Nombre</th>';
-echo '<th>Dernière</th>';
-echo '<th>Prochaine</th>';
+echo '<th><a href="?'.$filters_url.'&sort=relance_last">U</a> Dernière</th>';
+echo '<th><a href="?'.$filters_url.'&sort=relance_next">U</a> Prochaine</th>';
 echo '</tr>';
 foreach($l as $row) {
 	echo '<tr>';
@@ -309,13 +404,14 @@ foreach($l as $row) {
 	echo '<td>'.$row['name_alias'].'</td>';
 	echo '<td>'.(!empty($row['p_group']) ?$p_groups[$row['p_group']]['label'] :'').'</td>';
 	echo '<td>'.$row['town'].'</td>';
-	echo '<td class="num">'.$row['tot_nb'].'</td>';
-	echo '<td class="num">'.$row['tot_mt'].'</td>';
-	echo '<td><a href="/commande/card.php?id='.$row['last_rowid'].'">'.date_fromsql($row['last_date']).'</a></td>';
-	echo '<td class="num">'.$row['last_mt'].'</td>';
-	echo '<td class="num">'.$row['k_nb'].'</td>';
-	echo '<td class="num"><a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a></td>';
-	echo '<td class="num"><a href="/ccomm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a></td>';
+	echo '<td class="cmd num">'.$row['tot_nb'].'</td>';
+	if (in_array('cmd_tot_mt', $cols))
+		echo '<td class="cmd num">'.($row['tot_mt'] ?$row['tot_mt'].'&nbsp;&euro;' :'').'</td>';
+	echo '<td class="cmd"><a href="/commande/card.php?id='.$row['last_rowid'].'">'.date_fromsql($row['last_date']).'</a></td>';
+	echo '<td class="cmd num">'.($row['last_mt'] ?$row['last_mt'].'&nbsp;&euro;' :'').'</td>';
+	echo '<td class="rel num">'.$row['k_nb'].'</td>';
+	echo '<td class="rel num"><a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a></td>';
+	echo '<td class="rel num"><a href="/ccomm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a></td>';
 	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
 	echo '</tr>';
 }
