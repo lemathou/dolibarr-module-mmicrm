@@ -85,7 +85,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		// Email Overload
 		$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
 		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité je vous informe de conditions très intéressantes proposées par notre fabricant français, valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
+			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité, je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
 			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
 			.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
 			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
@@ -101,7 +101,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$options['email_message'] = $email_message;
 
 		// SMS Overload
-		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je vous informe que nous avons des conditions fabricant super intéressantes sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
+		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me rappeler {$commercial_tel}'."\r\n".'Belle journée ☀️';
 		$options['sms_message'] = $sms_message;
 		$options['nopaylink'] = true;
 
