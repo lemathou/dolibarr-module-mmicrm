@@ -50,8 +50,103 @@ class mmi_crm_relance extends mmi_generic_1_0
 	{
 		global $user, $db;
 
+		// @todo recup options from databasez
+
+		if (! isset($options['campagne'])) {
+			echo 'Missing campagne';
+			return false;
+		}
+		// Predefined campagnes
+		elseif ($options['campagne'] == 'volet') {
+			// Set campagne options
+			$options['fk_categorie'] = 22;
+			$options['date_validite_debut'] = '2024-01-01';
+			$options['date_validite_fin'] = '2024-06-30';
+			$options['email'] = true;
+			$options['sms'] = true;
+
+			// Email overload
+			//$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
+			$email_subject = 'Reconduction de l\'offre fabricant pour votre projet de volet piscine';
+			$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
+				//.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité, je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
+				.'Bonjour, suite au succès de notre offre du mois de juillet sur les volets piscine, nous avons le plaisir de vous informer que notre fabricant souhaite vous faire bénéficier de réductions supplémentaires valables sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre.'."\r\n\r\n"
+				//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+				.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
+				.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+				.'{$refuse_url}'."\r\n\r\n"
+				.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
+				.'Bien cordialement'."\r\n"
+				.'Best regards'."\r\n"."\r\n"
+				.'{$commercial_name}'."\r\n"
+				.'Email : {$commercial_email}'."\r\n"
+				.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
+				.'{$website_url}'."\r\n";
+			$options['email_subject'] = $email_subject;
+			$options['email_message'] = $email_message;
+
+			// SMS Overload
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$options['sms_message'] = $sms_message;
+			$options['nopaylink'] = true;
+		}
+		elseif ($options['campagne'] == 'couverture') {
+			// Set campagne options
+			$options['ref_client'] = 'couverture';
+			$options['date_validite_debut'] = '2024-01-01';
+			$options['date_validite_fin'] = '2024-06-30';
+			$options['email'] = true;
+			$options['sms'] = true;
+
+			// Email overload
+			$email_subject = 'Couverture de piscine - Bâche à barres - conditions très intéressantes - hivernage';
+			$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
+				//.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité, je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
+				.'Suite à nos différents échanges concernant votre projet de couverture de piscine, si celui-ci est toujours d\'actualité je vous informe de réductions supplémentaires proposées par nos fabricants français pour toutes commandes passées entre entre le 15 Août et le 13 Septembre 2024.'."\r\n\r\n"
+				//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+				.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
+				.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+				.'{$refuse_url}'."\r\n\r\n"
+				.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
+				.'Bien cordialement'."\r\n"
+				.'Best regards'."\r\n"."\r\n"
+				.'{$commercial_name}'."\r\n"
+				.'Email : {$commercial_email}'."\r\n"
+				.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
+				.'{$website_url}'."\r\n";
+			$options['email_subject'] = $email_subject;
+			$options['email_message'] = $email_message;
+
+			// SMS Overload
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine. Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$options['sms_message'] = $sms_message;
+			$options['nopaylink'] = true;
+		}
+		elseif ($options['campagne'] == 'couverture_0') {
+			// Set campagne options
+			$options['fk_statut'] = 0;
+			$options['ref_client'] = 'couverture';
+			$options['date_validite_debut'] = '2024-01-01';
+			$options['date_validite_fin'] = '2024-06-30';
+			$options['sms'] = true;
+
+			// SMS Overload
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine. Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$options['sms_message'] = $sms_message;
+			$options['nopaylink'] = true;
+		}
+		else {
+			echo 'Bad campagne';
+			return false;
+		}
+
+		// Par défaut devis ouverts seulement !
+		if (!isset($options['fk_statut']))
+			$options['fk_statut'] = 1;
 		if (! isset($options['date_validite_debut']))
 			$options['date_validite_debut'] = static::DATE_MIN;
+		if (! isset($options['days_lastemail']))
+			$options['days_lastemail'] = static::DAYS_LASTMAIL;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -67,48 +162,32 @@ class mmi_crm_relance extends mmi_generic_1_0
 				ON s.rowid=d.fk_soc
 			LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm am
 				ON am.code = "AC_PROPAL_SENTBYMAIL" AND am.elementtype="propal" AND am.fk_element=d.rowid
-				AND DATEDIFF(am.datec, NOW()) >= -'.static::DAYS_LASTMAIL.'
+				AND DATEDIFF(am.datec, NOW()) >= -'.$options['days_lastemail'].'
 			LEFT JOIN '.MAIN_DB_PREFIX.'element_element dc
 				ON dc.sourcetype="propal" AND dc.fk_source=d.rowid AND dc.targettype="commande"
-			WHERE d.fk_statut=1
-				'.(!empty($options['ref_client']) ?' AND d.ref_client LIKE "'.$options['ref_client'].'"' :'').'
-				'.(!empty($options['fk_categorie']) ?' AND cp.fk_categorie="'.$options['fk_categorie'].'"' :'').'
-				'.(!empty($options['date_validite_debut']) ?' AND d.fin_validite >= "'.$options['date_validite_debut'].'"' :'').'
-				'.(!empty($options['date_validite_fin']) ?' AND d.fin_validite <= "'.$options['date_validite_fin'].'"' :'').'
-				'.(!empty($options['rowid']) && is_numeric($options['rowid']) ?' AND d.rowid = "'.$options['rowid'].'"' :'').'
-				AND am.id IS NULL
-				AND dc.rowid IS NULL
-			GROUP BY d.rowid';
+			WHERE 1 '
+				.' AND am.id IS NULL'
+				.' AND dc.rowid IS NULL'
+				.(isset($options['fk_statut']) && is_numeric($options['fk_statut']) ?' AND d.fk_statut="'.$options['fk_statut'].'"' :'')
+				.(isset($options['price_min']) && is_numeric($options['price_min']) ?' AND d.total_ht >= "'.$options['price_min'].'"' :'')
+				.(isset($options['price_max']) && is_numeric($options['price_max']) ?' AND d.total_ht <= "'.$options['price_max'].'"' :'')
+				.(!empty($options['ref_client']) ?' AND d.ref_client LIKE "%'.$options['ref_client'].'%"' :'')
+				.(isset($options['fk_categorie']) && is_numeric($options['fk_categorie']) ?' AND cp.fk_categorie="'.$options['fk_categorie'].'"' :'')
+				.(!empty($options['date_validite_debut']) ?' AND d.fin_validite >= "'.$options['date_validite_debut'].'"' :'')
+				.(!empty($options['date_validite_fin']) ?' AND d.fin_validite <= "'.$options['date_validite_fin'].'"' :'')
+				.(!empty($options['rowid']) && is_numeric($options['rowid']) ?' AND d.rowid = "'.$options['rowid'].'"' :'')
+			.' GROUP BY d.rowid';
 		echo '<pre>'.$sql.'</pre>';
+
 		// Count
-
-		// Email Overload
-		$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
-		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-			.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité, je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
-			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
-			.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
-			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
-			.'{$refuse_url}'."\r\n\r\n"
-			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
-			.'Bien cordialement'."\r\n"
-			.'Best regards'."\r\n"."\r\n"
-			.'{$commercial_name}'."\r\n"
-			.'Email : {$commercial_email}'."\r\n"
-			.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
-			.'{$website_url}'."\r\n";
-		$options['email_subject'] = $email_subject;
-		$options['email_message'] = $email_message;
-
-		// SMS Overload
-		$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées du 26 juillet au 26 août. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
-		$options['sms_message'] = $sms_message;
-		$options['nopaylink'] = true;
-
-		// Group send
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
+
+		if (!empty($options['justcount']))
+			return;
+
+		die('dead');
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
@@ -136,7 +215,35 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['days_max'] = static::DAYS_MAX;
 		if (is_null($options['days_min']))
 			$options['days_min'] = static::DAYS_MIN;
+		if (! isset($options['days_lastemail']))
+			$options['days_lastemail'] = static::DAYS_LASTMAIL;
 		//var_dump($days);
+
+		// Different possible cases
+		if (true) {
+			// Email Overload
+			$email_subject = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+			$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
+				.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans {$echeance_heures} heures.'."\r\n\r\n"
+				//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
+				.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
+				.'{$payment_url}'."\r\n\r\n"
+				.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
+				.'{$refuse_url}'."\r\n\r\n"
+				.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
+				.'Bien cordialement'."\r\n"
+				.'Best regards'."\r\n"."\r\n"
+				.'{$commercial_name}'."\r\n"
+				.'Email : {$commercial_email}'."\r\n"
+				.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
+				.'{$website_url}'."\r\n";
+			$options['email_subject'] = $email_subject;
+			$options['email_message'] = $email_message;
+
+			// SMS Overload
+			$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$options['sms_message'] = $sms_message;
+		}
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -149,45 +256,27 @@ class mmi_crm_relance extends mmi_generic_1_0
 				ON s.rowid=d.fk_soc
 			LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm am
 				ON am.code = "AC_PROPAL_SENTBYMAIL" AND am.elementtype="propal" AND am.fk_element=d.rowid
-				AND DATEDIFF(am.datec, NOW()) >= -'.static::DAYS_LASTMAIL.'
+				AND DATEDIFF(am.datec, NOW()) >= -'.$options['days_lastemail'].'
 			LEFT JOIN '.MAIN_DB_PREFIX.'element_element dc
 				ON dc.sourcetype="propal" AND dc.fk_source=d.rowid AND dc.targettype="commande"
-			WHERE d.fk_statut=1
-				AND DATEDIFF(d.fin_validite, NOW()) >= '.$options['days_min'].' AND DATEDIFF(d.fin_validite, NOW()) <= '.$options['days_max'].'
-				AND am.id IS NULL
-				AND dc.rowid IS NULL
-			GROUP BY d.rowid';
+			WHERE 1'
+				.' AND am.id IS NULL'
+				.' AND dc.rowid IS NULL'
+				.' AND d.fk_statut=1'
+				.' AND DATEDIFF(d.fin_validite, NOW()) >= '.$options['days_min'].' AND DATEDIFF(d.fin_validite, NOW()) <= '.$options['days_max']
+				.(isset($options['price_min']) && is_numeric($options['price_min']) ?' AND d.total_ht >= "'.$options['price_min'].'"' :'')
+				.(isset($options['price_max']) && is_numeric($options['price_max']) ?' AND d.total_ht <= "'.$options['price_max'].'"' :'')
+			.' GROUP BY d.rowid';
 		echo '<pre>'.$sql.'</pre>';
-		//die();
+
 		// Count
-
-		// Email Overload
-		$email_subject = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-		$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-			.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans {$echeance_heures} heures.'."\r\n\r\n"
-			//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
-			.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
-			.'{$payment_url}'."\r\n\r\n"
-			.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
-			.'{$refuse_url}'."\r\n\r\n"
-			.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
-			.'Bien cordialement'."\r\n"
-			.'Best regards'."\r\n"."\r\n"
-			.'{$commercial_name}'."\r\n"
-			.'Email : {$commercial_email}'."\r\n"
-			.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
-			.'{$website_url}'."\r\n";
-		$options['email_subject'] = $email_subject;
-		$options['email_message'] = $email_message;
-
-		// SMS Overload
-		$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
-		$options['sms_message'] = $sms_message;
-
-		// Group send
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
+		
+		if (!empty($options['justcount']))
+			return;
+		
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
@@ -376,6 +465,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		if ($pay_link_gen) {
 			if (getDolGlobalString('MMICRM_SHLINK_SCRIPT')) {
+				//@todo PHP bin pas en dur
 				$shlink_command = '/usr/bin/php8.2 -f '.DOL_DOCUMENT_ROOT.'/custom/mmicrm/scripts/shlink.php "'.$payment_url.'"'; // 2>&1
 				//var_dump($shlink_command);
 				$shorturl = exec($shlink_command, $shlink_output, $shlink_result);
