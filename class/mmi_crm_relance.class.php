@@ -364,7 +364,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Message
 		$message_map = [
-			'customer_name' => (false ?' '.$thirdparty->nom :''),
+			'customer_name' => (true ?' '.$thirdparty->nom :''),
 			'devis_ref' => $object->ref,
 			'devis_valid_end_date' => $object->fin_validite ?date('d/m/Y', $object->fin_validite) :'-',
 			'payment_url' => $payment_url,
