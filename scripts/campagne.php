@@ -19,7 +19,7 @@ foreach ($argv as $key=>$arg) {
         $_GET[$e[0]]=0;
 }
 
-//var_dump($_GET); die();
+var_dump($_GET);// die();
 
 $options = [
 //	'email' => 1,
@@ -31,5 +31,10 @@ if (isset($_GET['campagne']))
 	$options['campagne'] = $_GET['campagne'];
 if (!empty($_GET['justcount']))
 	$options['justcount'] = true;
+if (!empty($_GET['email_send']))
+	$options['email_send'] = true;
+if (!empty($_GET['days_lastemail']))
+	$options['days_lastemail'] = $_GET['days_lastemail'];
+var_dump($options);
 
 mmi_crm_relance::propal_product_campagne($options);

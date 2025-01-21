@@ -187,7 +187,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		if (!empty($options['justcount']))
 			return;
 
-		die('dead');
+		//die('dead');
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
