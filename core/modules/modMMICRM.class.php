@@ -68,7 +68,7 @@ class modMMICRM extends DolibarrModules
 		$this->descriptionlong = "MMICRMDescription";
 
 		// Author
-		$this->editor_name = 'Mathieu Moulin iProspective';
+		$this->editor_name = 'Mathieu Moulin iProspective MMI';
 		$this->editor_url = 'https://iprospective.fr';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated' or a version string like 'x.y.z'
@@ -463,6 +463,8 @@ class modMMICRM extends DolibarrModules
 
 		// Actioncomm
         $extrafields->addExtraField('fk_c_email_template', $langs->trans('Extrafield_fk_c_email_template'), 'int', 100, 48, 'actioncom', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_fk_c_email_template'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_EMAIL_TEMPLATE');
+
+		// @todo : Add AC_SMS & AC_SMS_AUTO in dict actioncomm
 
 		// Permissions
 		$this->remove($options);

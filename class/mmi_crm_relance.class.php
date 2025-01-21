@@ -52,6 +52,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// @todo recup options from databasez
 
+		$ref = 'propal_product_campagne';
+
 		if (! isset($options['campagne'])) {
 			echo 'Missing campagne';
 			return false;
@@ -68,20 +70,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			// Email overload
 			//$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
 			$email_subject = 'Reconduction de l\'offre fabricant pour votre projet de volet piscine';
-			$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-				//.'Suite à nos différents échanges concernant votre projet de volet piscine, si celui-ci est toujours d\'actualité, je souhaite vous faire bénéficier en priorité d\'une offre fabricant uniquement valable sur les 150 premières commandes validées entre le 26 juillet et le 26 août.'."\r\n\r\n"
-				.'Bonjour, suite au succès de notre offre du mois de juillet sur les volets piscine, nous avons le plaisir de vous informer que notre fabricant souhaite vous faire bénéficier de réductions supplémentaires valables sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre.'."\r\n\r\n"
-				//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
-				.'Si vous souhaitez profiter de mon offre, je vous invite à me recontacter.'."\r\n"
-				.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
-				.'{$refuse_url}'."\r\n\r\n"
-				.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
-				.'Bien cordialement'."\r\n"
-				.'Best regards'."\r\n"."\r\n"
-				.'{$commercial_name}'."\r\n"
-				.'Email : {$commercial_email}'."\r\n"
-				.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
-				.'{$website_url}'."\r\n";
+			$email_message = file_get_contents('tpl/email/'.$ref.'.tpl.html');
 			$options['email_subject'] = $email_subject;
 			$options['email_message'] = $email_message;
 
@@ -211,6 +200,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 	{
 		global $user, $db;
 
+		$ref = 'propal_relance_valid_between_days';
+
 		if (is_null($options['days_max']))
 			$options['days_max'] = static::DAYS_MAX;
 		if (is_null($options['days_min']))
@@ -221,24 +212,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Different possible cases
 		if (true) {
-			// Email Overload
-			$email_subject = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-			$email_message = 'Bonjour {$customer_name}'.",\r\n\r\n"
-				.'Faisant suite à nos échanges et l’envoi de votre devis {$devis_ref} concernant votre projet d’achat de matériel pour votre piscine, je vous rappelle que ma propostion commerciale expire dans {$echeance_heures} heures.'."\r\n\r\n"
-				//.'Faisant suite à nos échanges et l’envoi de votre devis N°'.$object->ref.' concernant votre projet'.$projet.', je vous rappelle que ma propostion commerciale expire dans 72H00.'."\r\n\r\n"
-				.'Si vous souhaitez profiter de mon offre, je vous invite à cliquer sur le lien suivant pour effectuer votre règlement sécurisé :'."\r\n"
-				.'{$payment_url}'."\r\n\r\n"
-				.'Si vous n’êtes pas intéressé(e) vous pouvez aussi cliquer sur le lien suivant pour refuser notre offre :'."\r\n"
-				.'{$refuse_url}'."\r\n\r\n"
-				.'Restant à votre écoute, je vous souhaite une excellente journée.'."\r\n\r\n"
-				.'Bien cordialement'."\r\n"
-				.'Best regards'."\r\n"."\r\n"
-				.'{$commercial_name}'."\r\n"
-				.'Email : {$commercial_email}'."\r\n"
-				.'Tél.  : {$commercial_tel}'."\r\n"."\r\n"
-				.'{$website_url}'."\r\n";
-			$options['email_subject'] = $email_subject;
-			$options['email_message'] = $email_message;
+			$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+			$options['email_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
 
 			// SMS Overload
 			$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
@@ -391,6 +366,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$message_map = [
 			'customer_name' => (false ?' '.$thirdparty->nom :''),
 			'devis_ref' => $object->ref,
+			'devis_valid_end_date' => $object->fin_validite ?date('d/m/Y', $object->fin_validite) :'-',
 			'payment_url' => $payment_url,
 			'refuse_url' => $refuse_url,
 			'commercial_name' => $commercial['firstname'].($commercial['lastname'] ?' '.$commercial['lastname'] :''),
