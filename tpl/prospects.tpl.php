@@ -41,8 +41,8 @@ function col_sort_aff($sort_name)
 
 	$sort_name_order = ($sort==$sort_name ?($sort_order=='DESC' ?'DESC' :'ASC') :(!empty($sort_list[$sort_name]['sql_order']) ?$sort_list[$sort_name]['sql_order'] :'ASC'));
 
-	return '<a class="sort'.($sort==$sort_name && $sort_name_order=='ASC' ?' active' :'').'" href="?'.$filters_url.'&sort='.$sort_name.'&sort_order=ASC">'.('⯅').'</a>'
-		.'<a class="sort'.($sort==$sort_name && $sort_name_order=='DESC' ?' active' :'').'" href="?'.$filters_url.'&sort='.$sort_name.'&sort_order=DESC">'.('⯆').'</a> '.(!empty($sort_list[$sort_name]['label_short']) ?$sort_list[$sort_name]['label_short'] :$sort_list[$sort_name]['label']);
+	return '<a class="sort'.($sort==$sort_name && $sort_name_order=='ASC' ?' active' :'').'" href="?'.$filters_url.'&sort='.$sort_name.'&sort_order=ASC">'.('&darr;').'</a>'
+		.'<a class="sort'.($sort==$sort_name && $sort_name_order=='DESC' ?' active' :'').'" href="?'.$filters_url.'&sort='.$sort_name.'&sort_order=DESC">'.('&uarr;').'</a> '.(!empty($sort_list[$sort_name]['label_short']) ?$sort_list[$sort_name]['label_short'] :$sort_list[$sort_name]['label']);
 }
 
 function col_filter_aff($filter_name)
@@ -188,7 +188,7 @@ $filter_list = [
 		'col_only' => true,
 	],
 	'groupe_client' => [
-		'label' => 'Uniquement les groupes presta PRO',
+		'label' => 'Uniquement PRO',
 		'type' => 'bool',
 		'sql_where' => 's2.p_group > 3',
 		'col_only' => true,
@@ -362,6 +362,11 @@ $sort_list = [
 		'sql_join' => 'c',
 		'sql_sort' => 'MAX(c.date_commande)',
 	],
+	'client_lastupdate' => [
+		'label' => 'Dernière action/modif',
+		'label_short' => 'Date',
+		'sql_sort' => 'MAX(s.tms)',
+	],
 ];
 $sort = GETPOST('sort');
 $sort_order = GETPOST('sort_order');
@@ -395,7 +400,7 @@ while($row = $q->fetch_assoc()) {
 
 // Base
 $l = $l_s = [];
-$sql = 'SELECT s.rowid, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
+$sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
 	FROM '.MAIN_DB_PREFIX.'societe s
 	INNER JOIN '.MAIN_DB_PREFIX.'societe_extrafields s2 ON s2.fk_object=s.rowid
 	'.(!empty($sql_join) ?' '.implode(' ', $sql_join) :'').'
@@ -422,7 +427,7 @@ if (! empty($l_s)) {
 	// Commandes
 	$sql = 'SELECT c.fk_soc AS rowid,
 			COUNT(DISTINCT c.rowid) AS tot_nb, ROUND(SUM(c.total_ht), 2) AS tot_mt,
-			MAX(c.rowid) AS last_rowid, MAX(c.date_commande) AS last_date
+			MAX(c.rowid) AS last_rowid, MAX(c.date_commande) AS c_last_date
 		FROM '.MAIN_DB_PREFIX.'commande c
 		WHERE c.fk_soc IN ('.implode(', ', $l_s).')
 		GROUP BY c.fk_soc';
@@ -438,7 +443,7 @@ if (! empty($l_s)) {
 	// Dernière commande
 	if (!empty($l_c)) {
 		$sql = 'SELECT c.fk_soc AS rowid,
-			c.rowid AS last_rowid, c.date_commande AS last_date, ROUND(c.total_ht, 2) as last_mt
+			c.rowid AS last_rowid, c.date_commande AS c_last_date, ROUND(c.total_ht, 2) as last_mt
 		FROM '.MAIN_DB_PREFIX.'commande c
 		WHERE c.rowid IN ('.implode(', ', $l_c).')
 		GROUP BY c.fk_soc';
@@ -450,17 +455,53 @@ if (! empty($l_s)) {
 		}
 	}
 
+	$l_a = [];
 	// Actioncom (Prochaines Relances)
-	if (!empty($l_s)) {
-		$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_nb, MAX(a.datep) as a_last_date, MAX(a.id) as a_last_rowid
+	$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_nb, MAX(a.datep) as a_last_date, MAX(a.id) as a_last_rowid
+		FROM '.MAIN_DB_PREFIX.'actioncomm a
+		WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep > NOW()
+		GROUP BY a.fk_soc';
+	//echo $sql;
+	$q = $db->query($sql);
+	//var_dump($q);
+	while($row = $q->fetch_assoc()) {
+		$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
+		$l_a[] = $row['a_last_rowid'];
+	}
+	if (!empty($l_a)) {
+		$sql = 'SELECT a.fk_soc AS rowid, u.firstname AS a_last_user_firstname, u.lastname AS a_last_user_lastname
 			FROM '.MAIN_DB_PREFIX.'actioncomm a
-			WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep > NOW()
+			LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
+			WHERE a.id IN ('.implode(', ', $l_a).')';
+		//echo $sql;
+		$q = $db->query($sql);
+		while($row = $q->fetch_assoc()) {
+			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
+		}
+	}
+
+	$l_a2 = [];
+	// Actioncom (Dernière actions)
+	if (!empty($l_s)) {
+		$sql = 'SELECT a.fk_soc AS rowid, MAX(a.datep) AS a_before_last_date
+			FROM '.MAIN_DB_PREFIX.'actioncomm a
+			WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep <= NOW()
 			GROUP BY a.fk_soc';
 		//echo $sql;
 		$q = $db->query($sql);
 		//var_dump($q);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
+			//
+			$sql = 'SELECT a.fk_soc AS rowid, a.id AS a_last_rowid, u.firstname AS a_before_last_user_firstname, u.lastname AS a_before_last_user_lastname
+				FROM '.MAIN_DB_PREFIX.'actioncomm a
+				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
+				WHERE a.fk_soc='.$row['rowid'].' AND a.datep = "'.$row['a_before_last_date'].'"';
+			echo $sql;
+			$q = $db->query($sql);
+			while($row = $q->fetch_assoc()) {
+				$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
+			}
 		}
 	}
 
@@ -477,8 +518,49 @@ if (! empty($l_s)) {
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
 			$l_k[] = $row['k_last_rowid'];
+			$sql = 'SELECT k.mode_contact AS k_last_contact_type, u.firstname AS k_last_user_firstname, u.lastname AS k_last_user_lastname
+				FROM '.MAIN_DB_PREFIX.'contacttracking k
+				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=k.fk_user_creat
+				WHERE k.rowid = '.$row['k_last_rowid'];
+			//echo $sql;
+			$q2 = $db->query($sql);
+			$row2 = $q2->fetch_assoc();
+			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row2);
 		}
 	}
+}
+
+foreach($l as &$row) {
+	$row['udates'] = [$row['tms']];
+	if (isset($row['k_last_date']))
+		$row['udates'][] = $row['k_last_date'];
+	if (isset($row['c_last_date']))
+		$row['udates'][] = $row['c_last_date'];
+	if (isset($row['a_last_date']))
+		$row['udates'][] = $row['a_last_date'];
+	$row['udate'] = max($row['udates']);
+}
+
+// resort if needed (client_lastupdate)
+if ($sort == 'client_lastupdate') {
+	if ($sort_order == 'DESC')
+		uasort($l, function($a, $b) {
+			if ($a['udate'] < $b['udate'])
+				return 1;
+			elseif ($a['udate'] > $b['udate'])
+				return -1;
+			else
+				return 0;
+		});
+	else
+		uasort($l, function($a, $b) {
+			if ($a['udate'] > $b['udate'])
+				return 1;
+			elseif ($a['udate'] < $b['udate'])
+				return -1;
+			else
+				return 0;
+		});
 }
 
 foreach($filters as $i=>$j) {
@@ -494,15 +576,17 @@ foreach($cols as $i=>$j) {
 echo '<table id="crm_list" border="1" cellpadding="2">';
 echo '<tr>';
 echo '<th rowspan="2">'.col_sort_aff('nom').'</th>';
-echo '<th rowspan="2">Nom alternatif</th>';
+//echo '<th rowspan="2">Nom alternatif</th>';
 echo '<th rowspan="2">Groupe</th>';
 echo '<th rowspan="2">Ville</th>';
-echo '<th colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
+echo '<th width="100">Dernière Action/Modif</th>';
+echo '<th width="100" colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
 echo '<th colspan="3">Relances</th>';
 echo '</tr>';
 
 echo '<tr>';
+echo '<th>'.col_sort_aff('client_lastupdate').'</th>';
 echo '<th>'.col_sort_aff('commandes_nb').'</th>';
 if (in_array('cmd_tot_mt', $cols))
 	echo '<th>Montant</th>';
@@ -514,9 +598,10 @@ echo '<th>'.col_sort_aff('relance_next').'</th>';
 echo '</tr>';
 
 echo '<tr>';
-echo '<th colspan="2">'.col_filter_aff('client_nom').'</th>';
+echo '<th>'.col_filter_aff('client_nom').'</th>';
 echo '<th>'.col_filter_aff('groupe_client').'</th>';
 echo '<th>'.col_filter_aff('client_ville').'</th>';
+echo '<th>'.col_filter_aff('client_lastupdate').'</th>';
 echo '<th>'.col_filter_aff('prospect').'</th>';
 if (in_array('cmd_tot_mt', $cols))
 	echo '<th>'.col_filter_aff('cmd_tot_mt').'</th>';
@@ -530,18 +615,19 @@ echo '</tr>';
 
 foreach($l as $row) {
 	echo '<tr>';
-	echo '<td><a href="/comm/card.php?socid='.$row['rowid'].'">'.$row['nom'].'</a></td>';
-	echo '<td>'.$row['name_alias'].'</td>';
+	echo '<td><a href="/comm/card.php?socid='.$row['rowid'].'">'.$row['nom'].'</a>'.(!empty($row['name_alias']) ?' ('.$row['name_alias'].')' :'').'</td>';
 	echo '<td>'.(!empty($row['p_group']) ?$p_groups[$row['p_group']]['label'] :'').'</td>';
 	echo '<td>'.$row['town'].'</td>';
+	echo '<td class="center">'.date_fromsql(max($row['udates'])).'</td>';
 	echo '<td class="cmd num">'.$row['tot_nb'].'</td>';
 	if (in_array('cmd_tot_mt', $cols))
 		echo '<td class="cmd num">'.($row['tot_mt'] ?$row['tot_mt'].'&nbsp;&euro;' :'').'</td>';
-	echo '<td class="cmd"><a href="/commande/card.php?id='.$row['last_rowid'].'">'.date_fromsql($row['last_date']).'</a></td>';
+	echo '<td class="cmd"><a href="/commande/card.php?id='.$row['last_rowid'].'">'.date_fromsql($row['c_last_date']).'</a></td>';
 	echo '<td class="cmd num">'.($row['last_mt'] ?$row['last_mt'].'&nbsp;&euro;' :'').'</td>';
 	echo '<td class="rel num">'.$row['k_nb'].'</td>';
-	echo '<td class="rel num"><a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a></td>';
-	echo '<td class="rel num"><a href="/ccomm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a></td>';
+	echo '<td class="rel num">'.(!empty($row['k_last_rowid']) ?'<span class="k-user" title="'.$row['k_last_user_firstname'].' '.$row['k_last_user_lastname'].'">'.substr($row['k_last_user_firstname'], 0, 1).substr($row['k_last_user_lastname'], 0, 1).'</span> <span class="k-contact" title="'.$row['k_last_contact_type'].'">'.substr($row['k_last_contact_type'], 0, 4).'</span> <a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a>' :'').'</td>';
+	echo '<td class="rel num">'.(!empty($row['a_last_rowid']) ?'<span class="a-user" title="'.$row['a_last_user_firstname'].' '.$row['a_last_user_lastname'].'">'.substr($row['a_last_user_firstname'], 0, 1).substr($row['a_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a>' :'').'</td>';
+	echo '<td class="num"><a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.$row['rowid'].'&mode=show_month&">Histo</a></td>';
 	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
 	echo '</tr>';
 }
