@@ -497,7 +497,7 @@ if (! empty($l_s)) {
 				FROM '.MAIN_DB_PREFIX.'actioncomm a
 				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
 				WHERE a.fk_soc='.$row['rowid'].' AND a.datep = "'.$row['a_before_last_date'].'"';
-			echo $sql;
+			//echo $sql;
 			$q = $db->query($sql);
 			while($row = $q->fetch_assoc()) {
 				$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
@@ -627,7 +627,7 @@ foreach($l as $row) {
 	echo '<td class="rel num">'.$row['k_nb'].'</td>';
 	echo '<td class="rel num">'.(!empty($row['k_last_rowid']) ?'<span class="k-user" title="'.$row['k_last_user_firstname'].' '.$row['k_last_user_lastname'].'">'.substr($row['k_last_user_firstname'], 0, 1).substr($row['k_last_user_lastname'], 0, 1).'</span> <span class="k-contact" title="'.$row['k_last_contact_type'].'">'.substr($row['k_last_contact_type'], 0, 4).'</span> <a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a>' :'').'</td>';
 	echo '<td class="rel num">'.(!empty($row['a_last_rowid']) ?'<span class="a-user" title="'.$row['a_last_user_firstname'].' '.$row['a_last_user_lastname'].'">'.substr($row['a_last_user_firstname'], 0, 1).substr($row['a_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a>' :'').'</td>';
-	echo '<td class="num"><a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.$row['rowid'].'&mode=show_month&">Histo</a></td>';
+	echo '<td class="num"><a href="/custom/contacttracking/contacttracking_list.php?socid='.$row['rowid'].'&element_type=thirdparty">Histo</a> | <a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.$row['rowid'].'&mode=show_month&">Evé</a></td>';
 	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
 	echo '</tr>';
 }
