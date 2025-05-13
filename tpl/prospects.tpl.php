@@ -25,6 +25,17 @@
 </style>
 <?php
 
+$p_group_list = [];
+$sql = 'SELECT rowid AS `value`, label
+	FROM `'.MAIN_DB_PREFIX.'c_societe_p_group`
+	WHERE `active` = 1
+	ORDER BY `pos`';
+//echo $sql;
+$q = $db->query($sql);
+while($row = $q->fetch_array()) {
+	$p_group_list[$row['value']] = $row;
+}
+
 
 function date_fromsql($date)
 {
@@ -63,7 +74,14 @@ function col_filter_aff($filter_name)
 	}
 	elseif ($filter_list[$filter_name]['type'] == 'bool') {
 		return '<input type="hidden" name="filters['.$filter_name.']" value="" />'
-			.'<input id="filter_'.$filter_name.'" type="checkbox" name="filters['.$filter_name.']" value="1"'.(!empty($filters[$filter_name]) ?' checked' :'').' onchange="this.form.submit()" /> <label for="filter_'.$filter_name.'">'.$filter_list[$filter_name]['label'].'</label>';
+			.'<input id="filter_'.$filter_name.'" type="checkbox" name="filters['.$filter_name.']" value="1"'.(!empty($filters[$filter_name]) ?' checked' :'').' onchange="this.form.submit()" style="width: auto;" /> <label for="filter_'.$filter_name.'">'.$filter_list[$filter_name]['label'].'</label>';
+	}
+	elseif ($filter_list[$filter_name]['type'] == 'select') {
+		$ret = '<select name="filters['.$filter_name.']" onchange="this.form.submit()"><option value="">--</option>';
+		foreach($filter_list[$filter_name]['list'] as $name=>$option)
+			$ret .= '<option value="'.$name.'"'.(!empty($filters[$filter_name]) && $filters[$filter_name]==$name ?' selected' :'').'>'.$option['label'].'</option>';
+		$ret .= '</select>';
+		return $ret;
 	}
 }
 
@@ -188,7 +206,14 @@ $filter_list = [
 		'col_only' => true,
 	],
 	'groupe_client' => [
-		'label' => 'Uniquement PRO',
+		'label' => 'Groupe',
+		'type' => 'select',
+		'list' => $p_group_list,
+		'sql_where' => 's2.p_group = %value',
+		'col_only' => true,
+	],
+	'groupe_client_pro' => [
+		'label' => 'PRO',
 		'type' => 'bool',
 		'sql_where' => 's2.p_group > 3',
 		'col_only' => true,
@@ -202,7 +227,39 @@ if (!is_array($filters))
 echo '<td>';
 foreach($filter_list as $i=>$j) {
 
-	if ($j['type']=='radio') {
+	if ($j['type']=='select') {
+		echo '<select name="filters['.$i.']" onchange="this.form.submit()"><option value="">--</option>';
+		foreach($j['list'] as $i2=>$j2) {
+			if (!empty($filters[$i]) && $filters[$i]==$i2) {
+				$checked = ' checked';
+				if (!empty($j2['sql_join'])) {
+					if (is_string($j2['sql_join'])) {
+						$sql_join[$j2['sql_join']] = $join_list[$j2['sql_join']];
+					}
+					elseif (is_array($j2['sql_join'])) {
+						foreach($j2['sql_join'] as $k=>$l) {
+							$sql_join[$k] = $join_list[$k].' AND '.$l;
+						}
+					}
+				}
+				if (!empty($j['sql_where']))
+					$sql_where[] = str_replace('%value', $j2['value'], $j['sql_where']);
+				if (!empty($j2['sql_where']))
+					$sql_where[] = $j2['sql_where'];
+				if (!empty($j2['sql_having']))
+					$sql_having[] = $j2['sql_having'];
+				if (!empty($j2['sql_having']))
+					$sql_having[] = $j2['sql_having'];
+			}
+			else {
+				$checked = '';
+			}
+
+			echo '<option value="'.$i2.'"'.$checked.'>'.$j2['label'].'</option>';
+		}
+		echo '</select>';
+	}
+	elseif ($j['type']=='radio') {
 		foreach($j['list'] as $i2=>$j2) {
 			if (!empty($filters[$i]) && $filters[$i]==$i2) {
 				$checked = ' checked';
@@ -497,7 +554,7 @@ if (! empty($l_s)) {
 				FROM '.MAIN_DB_PREFIX.'actioncomm a
 				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
 				WHERE a.fk_soc='.$row['rowid'].' AND a.datep = "'.$row['a_before_last_date'].'"';
-			echo $sql;
+			//echo $sql;
 			$q = $db->query($sql);
 			while($row = $q->fetch_assoc()) {
 				$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
@@ -599,7 +656,7 @@ echo '</tr>';
 
 echo '<tr>';
 echo '<th>'.col_filter_aff('client_nom').'</th>';
-echo '<th>'.col_filter_aff('groupe_client').'</th>';
+echo '<th>'.col_filter_aff('groupe_client_pro').'<br />'.col_filter_aff('groupe_client').'</th>';
 echo '<th>'.col_filter_aff('client_ville').'</th>';
 echo '<th>'.col_filter_aff('client_lastupdate').'</th>';
 echo '<th>'.col_filter_aff('prospect').'</th>';
