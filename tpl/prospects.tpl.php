@@ -162,8 +162,8 @@ $filter_list = [
 	'relance_not_before_cmd' => [
 		'label' => 'Pas relancé depuis dernière commande',
 		'type' => 'bool',
-		'sql_join' => ['c'=>'1', 'k'=>'DATE(k.date_creation) >= DATE(c.date_commande)'], // Pas évident, la table peut service à plusieurs cas de figures
-		'sql_having' => 'COUNT(k.fk_soc) = 0',
+		'sql_join' => 'c',
+		'sql_where' => '(SELECT COUNT(k2.rowid) FROM '.MAIN_DB_PREFIX.'contacttracking AS k2 WHERE k2.fk_soc=s.rowid AND (c.rowid IS NULL OR k2.date_creation >= DATE(c.date_commande)) LIMIT 1) = 0',
 	],
 	'relance_min' => [
 		'label' => 'Relancé au moins n fois',
@@ -665,7 +665,7 @@ if (in_array('cmd_tot_mt', $cols))
 echo '<th>'.col_filter_aff('commande_last').'</th>';
 echo '<th>'.col_filter_aff('mt').'</th>';
 echo '<th>'.col_filter_aff('nb').'</th>';
-echo '<th>'.col_filter_aff('relance_last').'</th>';
+echo '<th>'.col_filter_aff('relance_not_before_cmd').'</th>';
 echo '<th>'.col_filter_aff('relance_next').'</th>';
 echo '</tr>';
 
