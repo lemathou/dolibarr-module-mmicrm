@@ -26,7 +26,6 @@ ModuleMMICRMDesc = Gestion avancée des cients et prospects
 # Admin page
 #
 MMICRMSetup = MMICRM setup
-Settings = Settings
 MMICRMSetupPage = MMICRM setup page
 DOCUMENT_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur l'ensemble des documents au statut brouillon
 PROPAL_DRAFT_MASSACTION_CAN_SEND = Autoriser l'envoi de mail en masse sur les devis au statut brouillon
@@ -47,7 +46,6 @@ MMICRM_SHLINK_SCRIPT = Execution de l'API Shlink via une commande en PHP 8.2
 #
 # About page
 #
-About = About
 MMICRMAbout = About MMICRM
 MMICRMAboutPage = MMICRM about page
 
