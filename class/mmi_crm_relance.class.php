@@ -54,6 +54,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		$ref = 'propal_product_campagne';
 
+		// @todo : Campaigns in database
+
 		if (! isset($options['campagne'])) {
 			echo 'Missing campagne';
 			return false;
@@ -75,8 +77,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de volet piscine. Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
-			$options['sms_message'] = $sms_message;
+			$options['sms_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
 			$options['nopaylink'] = true;
 		}
 		elseif ($options['campagne'] == 'couverture') {
@@ -125,7 +126,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['nopaylink'] = true;
 		}
 		else {
-			echo 'Bad campagne';
+			echo 'Bad/Unknown campagne';
 			return false;
 		}
 
@@ -211,14 +212,9 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//var_dump($days);
 
 		// Different possible cases
-		if (true) {
-			$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-			$options['email_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
-
-			// SMS Overload
-			$sms_message = 'Bonjour 👋, c’est {$commercial_website_name}'."\r\n".'Je fais suite à nos échanges et vous rappelle que notre offre est encore valable {$echeance_heures} heures.'."\r\n".'{$shorturl}'."\r\n".'N’hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
-			$options['sms_message'] = $sms_message;
-		}
+		$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+		$options['email_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
+		$options['sms_message'] = file_get_contents('tpl/sms/'.$ref.'.tpl.html');;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -416,6 +412,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			//var_dump($commercial); die();
 		}
 		else {
+			// @todo : use default soc contact
 			$commercial = [];
 			$commercial['firstname'] = 'Pisceen';
 			$commercial['lastname'] = '';
@@ -423,6 +420,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$commercial['office_phone'] = '04 69 11 00 79';
 		}
 
+		// @todo : use SMS config
 		$smsfrom	= 'PISCEEN';
 		$receiver   = 'thirdparty';
 		$sendto		= $thirdparty->phone;
