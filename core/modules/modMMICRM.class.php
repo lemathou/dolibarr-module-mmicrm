@@ -173,6 +173,12 @@ class modMMICRM extends DolibarrModules
 
 		// Array to add new pages in new tabs
 		$this->tabs = array();
+		$this->tabs[] = array('data'=>'product:+product_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/product_comments.php?id=__ID__');
+		$this->tabs[] = array('data'=>'propal:+propal_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/propal_comments.php?id=__ID__');
+		$this->tabs[] = array('data'=>'order:+order_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/order_comments.php?id=__ID__');
+		$this->tabs[] = array('data'=>'supplier_order:+supplier_order_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/supplier_order_comments.php?id=__ID__');
+		$this->tabs[] = array('data'=>'invoice:+invoice_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/invoice_comments.php?id=__ID__');
+		$this->tabs[] = array('data'=>'supplier_invoice:+supplier_invoice_comment:Comments:mmicrm@mmicrm:1:custom/mmicrm/supplier_invoice_comments.php?id=__ID__');
 		// Example:
 		// $this->tabs[] = array('data'=>'objecttype:+tabname1:Title1:mylangfile@mmicrm:$user->rights->mmicrm->read:/mmicrm/mynewtab1.php?id=__ID__');  					// To add a new tab identified by code tabname1
 		// $this->tabs[] = array('data'=>'objecttype:+tabname2:SUBSTITUTION_Title2:mylangfile@mmicrm:$user->rights->othermodule->read:/mmicrm/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2. Label will be result of calling all substitution functions on 'Title2' key.
