@@ -219,6 +219,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//var_dump($days);
 
 		// Different possible cases
+		// TODO get template file from fullpath name
 		$options['email_message'] = file_get_contents('tpl/email/'.$options['tplref'].'.tpl.html');
 		$options['sms_message'] = file_get_contents('tpl/sms/'.$options['tplref'].'.tpl.html');;
 
