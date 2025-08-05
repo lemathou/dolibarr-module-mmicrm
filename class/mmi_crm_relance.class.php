@@ -7,6 +7,8 @@ require_once DOL_DOCUMENT_ROOT."/categories/class/categorie.class.php";
 require_once DOL_DOCUMENT_ROOT."/product/class/product.class.php";
 require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/CSMSFile.class.php";
+require_once DOL_DOCUMENT_ROOT."/core/lib/date.lib.php";
+
 dol_include_once("/ovh/class/ovhsms.class.php");
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
@@ -201,20 +203,24 @@ class mmi_crm_relance extends mmi_generic_1_0
 	{
 		global $user, $db;
 
-		$ref = 'propal_relance_valid_between_days';
-
 		if (is_null($options['days_max']))
 			$options['days_max'] = static::DAYS_MAX;
 		if (is_null($options['days_min']))
 			$options['days_min'] = static::DAYS_MIN;
 		if (! isset($options['days_lastemail']))
 			$options['days_lastemail'] = static::DAYS_LASTMAIL;
+		if (! isset($options['email_subject']))
+			$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+		if (is_null($options['tplref']))
+			$options['tplref'] = 'propal_relance_valid_between_days';
+		if (is_null($options['update_fin_validite']))
+			$options['update_fin_validite'] = 0;
+
 		//var_dump($days);
 
 		// Different possible cases
-		$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-		$options['email_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
-		$options['sms_message'] = file_get_contents('tpl/sms/'.$ref.'.tpl.html');;
+		$options['email_message'] = file_get_contents('tpl/email/'.$options['tplref'].'.tpl.html');
+		$options['sms_message'] = file_get_contents('tpl/sms/'.$options['tplref'].'.tpl.html');;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -244,10 +250,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
-		
+
 		if (!empty($options['justcount']))
 			return;
-		
+
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
@@ -260,6 +266,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 				static::object_sendmail_template($user, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
 			if (!empty($options['sms']))
 				static::object_sendsms($user, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
+
+			if (!empty($options['update_fin_validite'])) {
+				$result = $object->set_echeance($user, dol_time_plus_duree($object->date_validation,2,'d'));
+			}
 
 			$nb++;
 			if ($nb>=static::RELANCE_MAX)
@@ -278,7 +288,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$_POST['oneemailperrecipient'] = 'on';
 		$_POST['addmaindocfile'] = 'on';
 		$_POST['sendmail'] = 'on';
-	
+
 		$object_type = get_class($object);
 		$objectclass = $object_type;
 		$type = strtolower($object_type);
@@ -316,7 +326,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		if (empty($projet)) {
 			$projet = ' '.static::PROJECT_DEFAULT_NAME;
 		}
-		
+
 		// Client
 		$thirdparty = $object->thirdparty;
 		//var_dump($thirdparty); die();
@@ -373,7 +383,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		];
 		$_POST['subject'] = $options['email_subject'];
 		$_POST['message'] = static::map($message_map, $options['email_message']);
-		
+
 		if($recap) {
 			echo '<hr />';
 			echo '<p><i>EMAIL</i></p>';
@@ -467,7 +477,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		];
 		$body = static::map($message_map, $options['sms_message']);
 		//var_dump($body); die();
-		
+
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
 			$sendto=$thirdparty->contact_get_property($receiver, 'mobile');
 		}
