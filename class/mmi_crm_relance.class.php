@@ -268,7 +268,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 				static::object_sendsms($user, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
 
 			if (!empty($options['update_fin_validite'])) {
-				$result = $object->set_echeance($user, dol_time_plus_duree($object->date_validation,2,'d'));
+				$result = $object->set_echeance($user, dol_time_plus_duree($object->date_validation,3,'d'));
 			}
 
 			$nb++;
