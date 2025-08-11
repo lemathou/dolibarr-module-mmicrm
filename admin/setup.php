@@ -48,6 +48,7 @@ $arrayofparameters = array(
 	'MMI_CRM_SMS_AFTER_MAIL_AUTO'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMI_CRM_SMS_AFTER_MAIL_MSG'=>array('type'=>'textarea', 'enabled'=>1),
 	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO_ONLYIFNOT'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI'=>array('type'=>'int', 'enabled'=>1),
 );
 

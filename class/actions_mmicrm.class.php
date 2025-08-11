@@ -28,11 +28,11 @@ class ActionsMMICRM extends MMI_Actions_1_0
 			// Send SMS after email
 			if (getDolGlobalInt('MMI_CRM_SMS_AFTER_MAIL_AUTO')) {
 				// Par défaut
-				$sms_message_tpl = getDolGlobalString('MMI_CRM_SMS_AFTER_MAIL_MSG');
 				$options = [
 					'recap' => 1,
 					'email_send' => 1,
-					'sms_message' => $sms_message_tpl,
+					'sms_message' => getDolGlobalString('MMI_CRM_SMS_AFTER_MAIL_MSG'),
+					'nopaylink' => 1, // No payment link in SMS
 				];
 				$ret = mmi_crm_relance::object_sendsms($user, $object, mmi_crm_relance::PROPAL_RELANCE_SMS_TPL, $options);
 				//var_dump($ret); die();
@@ -40,7 +40,7 @@ class ActionsMMICRM extends MMI_Actions_1_0
 			// Create actioncomm after email
 			if (getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO')) {
 				$delai = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
-				$ret = mmi_crm_relance::object_relance_agenda($user, $object, ['delai'=>$delai]);
+				$ret = mmi_crm_relance::object_relanceauto_agenda($user, $object, ['delai'=>$delai]);
 			}
 		}
 

@@ -7,7 +7,7 @@ require_once DOL_DOCUMENT_ROOT."/categories/class/categorie.class.php";
 require_once DOL_DOCUMENT_ROOT."/product/class/product.class.php";
 require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/CSMSFile.class.php";
-dol_include_once("/ovh/class/ovhsms.class.php");
+require_once DOL_DOCUMENT_ROOT."/comm/action/class/actioncomm.class.php";
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
 
@@ -51,9 +51,29 @@ class mmi_crm_relance extends mmi_generic_1_0
 	/**
 	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai
 	 */
-	public static function object_relanceauto_agenda($user, $object, $options=[])
+	public static function object_relanceauto_agenda(User $user, CommonObject $object, $options=[])
 	{
 		global $langs, $db;
+
+		if (getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_ONLYIFNOT')) {
+			// On ne relance que si pas de relance déjà faite
+			$sql = 'SELECT COUNT(*)'
+				.' FROM '.MAIN_DB_PREFIX.'actioncomm AS ac'
+				.' WHERE ac.code IN ("AC_RDV_AUTO", "AC_RDV")'
+				.' AND ac.elementtype = "'.$object->element.'" AND ac.fk_element = '.$object->id
+				.' AND DATE(ac.datep) > DATE(NOW())';
+			$resql = $db->query($sql);
+			if ($resql) {
+				list($num) = $db->fetch_row($resql);
+				if ($num > 0) {
+					return false; // Already done
+				}
+			}
+			else {
+				dol_print_error($db);
+				return false;
+			}
+		}
 
 		if (!is_array($options))
 			$options = [];
@@ -72,7 +92,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 	/**
 	 * Relance sur un objet (Propal, Commande, Facture, etc.)
 	 */
-	public static function object_relance_agenda($user, $object, $options=[])
+	public static function object_relance_agenda(User $user, CommonObject $object, $options=[])
 	{
 		global $langs, $db;
 
@@ -312,6 +332,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			// @todo voir si on le fait en auto dans object_sendsms()
 			$object->fetch_thirdparty();
 			// c_email_templates
+			$options['email_sms_noauto'] = 1; // @todo No auto SMS after email Actually we do not need this option because we use massaction to send emails
 			if (!empty($options['email']))
 				static::object_sendmail_template($user, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
 			if (!empty($options['sms']))
@@ -520,6 +541,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'shorturl' => $shorturl,
 			'commercial_tel' => $commercial['office_phone'],
 			'commercial_email' => $commercial['email'],
+			'customer_email' => $thirdparty->email,
 			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$body = static::map($message_map, $options['sms_message']);

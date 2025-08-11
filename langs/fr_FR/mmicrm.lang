@@ -49,6 +49,7 @@ MMI_CRM_AFTER_MAIL_AUTO = Automatisations après envoi d'un email de propale
 MMI_CRM_SMS_AFTER_MAIL_AUTO = Envoi automatique de SMS après l'envoi d'un email de propale
 MMI_CRM_SMS_AFTER_MAIL_MSG = Message du SMS envoyé après l'envoi d'un email de propale
 MMI_CRM_RELANCE_AFTER_MAIL_AUTO = Création relance auto après l'envoi d'un email de propale
+MMI_CRM_RELANCE_AFTER_MAIL_AUTO_ONLYIFNOT = Création relance auto uniquement si pas de relance déjà créée
 MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI = Délai (jours) de création relance auto
 
 #
