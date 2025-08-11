@@ -22,6 +22,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 	// Pas de relance depuis ... jouts
 	const DAYS_LASTMAIL = 0;
 	// Date mini des propales à relancer
+	// @todo Mettre en paramètre administrable
 	const DATE_MIN = '2024-01-01';
 
 	// Max envoi simultané
@@ -29,6 +30,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 	// Qualifier le projet par les catégorie des produits du devis
 	const PROJECT_BY_CAT = false;
+	// @todo Mettre en paramètre administrable
 	const PROJECT_DEFAULT_NAME = 'de matériel de piscine';
 
 	// Templates
@@ -46,6 +48,58 @@ class mmi_crm_relance extends mmi_generic_1_0
 		return str_replace($map_from, $map_to, $string);
 	}
 
+	/**
+	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai
+	 */
+	public static function object_relanceauto_agenda($user, $object, $options=[])
+	{
+		global $langs, $db;
+
+		if (!is_array($options))
+			$options = [];
+		// if set to 0 we keep !
+		if (is_null($options['delai'])) {
+			$delai_default = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
+			$options['detai'] = is_numeric($delai_default) ?$delai_default :1;
+		}
+		$options['date'] = dol_now() + $options['delai'] * (24 * 3600);
+		$options['label'] = $langs->trans("RDVAutoRelanceAfterEmail");
+		$options['code'] = 'AC_RDV_AUTO';
+
+		return static::object_relance_agenda($user, $object, $options);
+	}
+
+	/**
+	 * Relance sur un objet (Propal, Commande, Facture, etc.)
+	 */
+	public static function object_relance_agenda($user, $object, $options=[])
+	{
+		global $langs, $db;
+
+		// Missing options
+		if (!is_array($options) || empty($options['date']) || empty($options['code']) || empty($options['label'])) {
+			return false;
+		}
+
+		$actioncomm = new ActionComm($db);
+		
+		$actioncomm->code = $options['code'];
+		$actioncomm->type_code = 'AC_RDV';
+		$actioncomm->label = $options['label'];
+		$actioncomm->datep = $options['date'];
+		$actioncomm->socid = $object->socid;
+		$actioncomm->contact_id = $object->contact_id;
+		$actioncomm->userownerid = $user->id;
+		$actioncomm->percentage = 0; // A faire
+		// L'élément de l'action
+		$actioncomm->fk_element		= $object->id;
+		$actioncomm->elementtype	= $object->element;
+
+		$ret = $actioncomm->create($user);
+
+		return $ret;
+	}
+
 	public static function propal_product_campagne($options=[])
 	{
 		global $user, $db;
@@ -61,6 +115,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			return false;
 		}
 		// Predefined campagnes
+		// @todo Mettre en dictionnaire ou table normale
 		elseif ($options['campagne'] == 'volet') {
 			// Set campagne options
 			$options['fk_categorie'] = 22;
@@ -254,6 +309,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			//var_dump($id);
 			$object = new Propal($db);
 			$object->fetch($id);
+			// @todo voir si on le fait en auto dans object_sendsms()
 			$object->fetch_thirdparty();
 			// c_email_templates
 			if (!empty($options['email']))
@@ -330,6 +386,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			//var_dump($commercial); die();
 		}
 		else {
+			// @todo Mettre en paramètre
 			$commercial = [];
 			$commercial['firstname'] = 'Pisceen';
 			$commercial['lastname'] = '';
@@ -519,6 +576,17 @@ class mmi_crm_relance extends mmi_generic_1_0
 				$smsfile->contactid = 0;
 				$smsfile->contact_id = 0;
 				$smsfile->fk_project = 0;
+
+				if ($object_type == 'Propal') {
+					$smsfile->fk_element = $object->id;
+					$smsfile->elementtype = 'propal';
+				} elseif ($object_type == 'Order') {
+					$smsfile->fk_element = $object->id;
+					$smsfile->elementtype = 'order';
+				} else {
+					$smsfile->fk_element = 0;
+					$smsfile->elementtype = '';
+				}
 
 				// Send the SMS
 				$result=$smsfile->sendfile(); // This send SMS. It also includes run of triggers 'SENTBYSMS'.

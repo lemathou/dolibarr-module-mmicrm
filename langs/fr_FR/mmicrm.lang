@@ -39,9 +39,17 @@ MMICRM_RELANCES_SEP = Relances email et SMS
 MMICRM_RELANCES = Activer relances par email/SMS
 MMICRM_EMAIL_TEMPLATE = Template utilisé pour les relances email
 MMICRM_SMS_CLEAN_UNCIODE = Nettoyer les caractères unicode interdit dans les envois de SMS
+
+MMICRM_SHLINK = Raccourcisseur URL Shlink
 MMICRM_SHLINK_URL = Adresse serveur Shlink
 MMICRM_SHLINK_KEY = Clé API serveur Shlink
 MMICRM_SHLINK_SCRIPT = Execution de l'API Shlink via une commande en PHP 8.2
+
+MMI_CRM_AFTER_MAIL_AUTO = Automatisations après envoi d'un email de propale
+MMI_CRM_SMS_AFTER_MAIL_AUTO = Envoi automatique de SMS après l'envoi d'un email de propale
+MMI_CRM_SMS_AFTER_MAIL_MSG = Message du SMS envoyé après l'envoi d'un email de propale
+MMI_CRM_RELANCE_AFTER_MAIL_AUTO = Création relance auto après l'envoi d'un email de propale
+MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI = Délai (jours) de création relance auto
 
 #
 # About page
@@ -74,3 +82,5 @@ Extrafield_fk_c_email_template = Modèle d'email
 ExtrafieldToolTip_fk_c_email_template = Utilisé dans les envois d'email
 Extrafield_relance_disp = Affichage dans les Relances
 ExtrafieldToolTip_relance_disp = Seront affichées dans les EMails, SMS, etc.
+
+RDVAutoRelanceAfterEmail = Relance automatique après envoi par email

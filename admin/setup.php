@@ -33,13 +33,22 @@ $arrayofparameters = array(
 	'INVOICE_DRAFT_MASSACTION_CAN_SEND'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_PROPAL_HIDE_SIGN'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_USER_MAILFROM_NAME'=>array('type'=>'yesno', 'enabled'=>1),
+	
 	'MMICRM_RELANCES_SEP'=>array('type'=>'separator', 'enabled'=>1),
 	'MMICRM_RELANCES'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_EMAIL_TEMPLATE'=>array('type'=>'string', 'enabled'=>1),
 	'MMICRM_SMS_CLEAN_UNCIODE'=>array('type'=>'yesno', 'enabled'=>1),
+
+	'MMICRM_SHLINK'=>array('type'=>'separator', 'enabled'=>1),
 	'MMICRM_SHLINK_URL'=>array('type'=>'string', 'enabled'=>1),
 	'MMICRM_SHLINK_KEY'=>array('type'=>'securekey', 'enabled'=>1),
 	'MMICRM_SHLINK_SCRIPT'=>array('type'=>'yesno', 'enabled'=>1),
+	
+	'MMI_CRM_AFTER_MAIL_AUTO'=>array('type'=>'separator', 'enabled'=>1),
+	'MMI_CRM_SMS_AFTER_MAIL_AUTO'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMI_CRM_SMS_AFTER_MAIL_MSG'=>array('type'=>'textarea', 'enabled'=>1),
+	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI'=>array('type'=>'int', 'enabled'=>1),
 );
 
 require_once('../../mmicommon/admin/mmisetup_1.inc.php');
