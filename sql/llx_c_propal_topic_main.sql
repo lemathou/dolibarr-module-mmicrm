@@ -3,7 +3,8 @@ CREATE TABLE `llx_c_propal_topic_main` (
   `active` tinyint(1) NOT NULL DEFAULT 0,
   `pos` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `code` varchar(16) NOT NULL,
-  `label` varchar(128) NOT NULL
+  `label` varchar(128) NOT NULL,
+  `emailqual` varchar(128) NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 ALTER TABLE `llx_c_propal_topic_main`

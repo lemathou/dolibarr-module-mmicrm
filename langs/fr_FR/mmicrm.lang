@@ -88,3 +88,5 @@ Extrafield_fk_topic_main = Qualification demande client
 ExtrafieldToolTip_fk_topic_main = Sera utilisée dans les communications automatiques (Email, SMS) pour qualifier le document
 
 RDVAutoRelanceAfterEmail = Relance automatique après envoi par email
+
+Emailqual = Qualification à ajouter aux communications
