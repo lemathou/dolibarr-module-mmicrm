@@ -535,6 +535,22 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$shorturl = '';
 		}
 
+		if (!empty($object->array_options['fk_topic_main'])) {
+			$sql = 'SELECT t.emailqual FROM '.MAIN_DB_PREFIX.'c_propal_topic AS t'
+				.' WHERE t.rowid = '.$object->array_options['fk_topic_main'];
+			$resql = $db->query($sql);
+			if ($resql) {
+				if ($topic_main = $db->fetch_object($resql))
+					$document_qualif = ' '.$topic_main->emailqual;
+				else
+					$document_qualif = '';
+			}
+			else {
+				dol_print_error($db);
+				$document_qualif = '';
+			}
+		}
+
 		// Message
 		$message_map = [
 			'commercial_website_name' => (!empty($commercial['email_sender_name']) ?$commercial['email_sender_name'] :(!empty($commercial['firstname']) ?$commercial['firstname'].' de pisceen.com' :'pisceen.com')),
@@ -542,6 +558,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'commercial_tel' => $commercial['office_phone'],
 			'commercial_email' => $commercial['email'],
 			'customer_email' => $thirdparty->email,
+			'document_qualif' => $document_qualif,
 			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$body = static::map($message_map, $options['sms_message']);
