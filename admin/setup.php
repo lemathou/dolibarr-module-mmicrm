@@ -33,6 +33,7 @@ $arrayofparameters = array(
 	'INVOICE_DRAFT_MASSACTION_CAN_SEND'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_PROPAL_HIDE_SIGN'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMICRM_USER_MAILFROM_NAME'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMI_CRM_TOPIC_MAIN_ACTIVE'=>array('type'=>'yesno', 'enabled'=>1),
 	
 	'MMICRM_RELANCES_SEP'=>array('type'=>'separator', 'enabled'=>1),
 	'MMICRM_RELANCES'=>array('type'=>'yesno', 'enabled'=>1),

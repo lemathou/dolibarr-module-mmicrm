@@ -207,30 +207,27 @@ class modMMICRM extends DolibarrModules
 		// 'user'             to add a tab in user view
 
 		// Dictionaries
-		$this->dictionaries = array();
-		/* Example:
-		$this->dictionaries=array(
+		$this->dictionaries = array(
 			'langs'=>'mmicrm@mmicrm',
 			// List of tables we want to see into dictonnary editor
-			'tabname'=>array(MAIN_DB_PREFIX."table1", MAIN_DB_PREFIX."table2", MAIN_DB_PREFIX."table3"),
+			'tabname'=>array(MAIN_DB_PREFIX."c_propal_topic_main"),
 			// Label of tables
-			'tablib'=>array("Table1", "Table2", "Table3"),
+			'tablib'=>array("Qualification demande client"),
 			// Request to select fields
-			'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table1 as f', 'SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table2 as f', 'SELECT f.rowid as rowid, f.code, f.label, f.active FROM '.MAIN_DB_PREFIX.'table3 as f'),
+			'tabsql'=>array('SELECT f.rowid as rowid, f.code, f.label, f.active, f.pos FROM '.MAIN_DB_PREFIX.'c_propal_topic_main as f'),
 			// Sort order
-			'tabsqlsort'=>array("label ASC", "label ASC", "label ASC"),
+			'tabsqlsort'=>array("pos ASC"),
 			// List of fields (result of select to show dictionary)
-			'tabfield'=>array("code,label", "code,label", "code,label"),
+			'tabfield'=>array("code,label,pos"),
 			// List of fields (list of fields to edit a record)
-			'tabfieldvalue'=>array("code,label", "code,label", "code,label"),
+			'tabfieldvalue'=>array("code,label,pos"),
 			// List of fields (list of fields for insert)
-			'tabfieldinsert'=>array("code,label", "code,label", "code,label"),
+			'tabfieldinsert'=>array("code,label,pos"),
 			// Name of columns with primary key (try to always name it 'rowid')
-			'tabrowid'=>array("rowid", "rowid", "rowid"),
+			'tabrowid'=>array("rowid"),
 			// Condition to show each dictionary
-			'tabcond'=>array($conf->mmicrm->enabled, $conf->mmicrm->enabled, $conf->mmicrm->enabled)
+			'tabcond'=>array($conf->mmicrm->enabled && $conf->global->MMI_CRM_TOPIC_MAIN_ACTIVE),
 		);
-		*/
 
 		// Boxes/Widgets
 		// Add here list of php file(s) stored in mmicrm/core/boxes that contains a class to show a widget.
@@ -470,6 +467,15 @@ class modMMICRM extends DolibarrModules
 
 		// Actioncomm
         $extrafields->addExtraField('fk_c_email_template', $langs->trans('Extrafield_fk_c_email_template'), 'int', 100, 48, 'actioncom', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_fk_c_email_template'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_EMAIL_TEMPLATE');
+
+		// Propal
+		$extrafields->addExtraField('fk_topic_main', $langs->trans('Extrafield_fk_topic_main'), 'sellist',  100,  "", 'propal',  0, 0, '', "a:1:{s:7:\"options\";a:1:{s:33:\"c_propal_topic_main:label:rowid::\";N;}}", 1,'', -1, $langs->trans('ExtrafieldToolTip_fk_topic_main'), '', $conf->entity, 'mmidocuments@mmidocuments', '$conf->mmidocuments->enabled && $conf->global->MMI_CRM_TOPIC_MAIN_ACTIVE', 0);
+
+		// Commande
+		$extrafields->addExtraField('fk_topic_main', $langs->trans('Extrafield_fk_topic_main'), 'sellist',  100,  "", 'commande',  0, 0, '', "a:1:{s:7:\"options\";a:1:{s:33:\"c_propal_topic_main:label:rowid::\";N;}}", 1,'', -1, $langs->trans('ExtrafieldToolTip_fk_topic_main'), '', $conf->entity, 'mmidocuments@mmidocuments', '$conf->mmidocuments->enabled && $conf->global->MMI_CRM_TOPIC_MAIN_ACTIVE', 0);
+
+		// Facture
+		$extrafields->addExtraField('fk_topic_main', $langs->trans('Extrafield_fk_topic_main'), 'sellist',  100,  "", 'facture',  0, 0, '', "a:1:{s:7:\"options\";a:1:{s:33:\"c_propal_topic_main:label:rowid::\";N;}}", 1,'', -1, $langs->trans('ExtrafieldToolTip_fk_topic_main'), '', $conf->entity, 'mmidocuments@mmidocuments', '$conf->mmidocuments->enabled', 0);
 
 		// @todo : Add AC_SMS & AC_SMS_AUTO in dict actioncomm
 
