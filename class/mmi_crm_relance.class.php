@@ -535,9 +535,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$shorturl = '';
 		}
 
-		if (!empty($object->array_options['fk_topic_main'])) {
-			$sql = 'SELECT t.emailqual FROM '.MAIN_DB_PREFIX.'c_propal_topic AS t'
-				.' WHERE t.rowid = '.$object->array_options['fk_topic_main'];
+		// Document qualification using propal main topic in dictionnary
+		if (!empty($object->array_options['options_fk_topic_main'])) {
+			$sql = 'SELECT t.emailqual FROM '.MAIN_DB_PREFIX.'c_propal_topic_main AS t'
+				.' WHERE t.rowid = '.$object->array_options['options_fk_topic_main'];
 			$resql = $db->query($sql);
 			if ($resql) {
 				if ($topic_main = $db->fetch_object($resql))
