@@ -62,6 +62,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 			echo 'Missing campagne';
 			return false;
 		}
+
+		// @todo : get options from database
 		// Predefined campagnes
 		elseif ($options['campagne'] == 'volet') {
 			// Set campagne options
@@ -74,12 +76,12 @@ class mmi_crm_relance extends mmi_generic_1_0
 			// Email overload
 			//$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
 			$email_subject = 'Reconduction de l\'offre fabricant pour votre projet de volet piscine';
-			$email_message = file_get_contents('tpl/email/'.$ref.'.tpl.html');
+			$email_message = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$ref.'.tpl.html');
 			$options['email_subject'] = $email_subject;
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$options['sms_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
+			$options['sms_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$ref.'.tpl.html');
 			$options['nopaylink'] = true;
 		}
 		elseif ($options['campagne'] == 'couverture') {
@@ -219,9 +221,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//var_dump($days);
 
 		// Different possible cases
-		// TODO get template file from fullpath name
-		$options['email_message'] = file_get_contents('tpl/email/'.$options['tplref'].'.tpl.html');
-		$options['sms_message'] = file_get_contents('tpl/sms/'.$options['tplref'].'.tpl.html');;
+		$options['email_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$options['tplref'].'.tpl.html');
+		$options['sms_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/sms/'.$options['tplref'].'.tpl.html');;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
