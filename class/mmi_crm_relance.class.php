@@ -37,6 +37,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 	const PROPAL_RELANCE_EMAIL_TPL = 1;
 	const PROPAL_RELANCE_SMS_TPL = 1;
 
+	// User cache
+	const USER_CACHE = true; // Cache user object to avoid multiple fetch
+	protected static $user_cache = [];
+
 	public static function map($map, $string)
 	{
 		$map_from = $map_to = [];
@@ -201,6 +205,33 @@ class mmi_crm_relance extends mmi_generic_1_0
 		}
 	}
 
+	public static function document_commercial($object)
+	{
+		global $db, $user;
+
+		/** @var CommonObject $object */
+		$commerciaux = $object->liste_contact(-1, 'internal');
+		if (empty($commerciaux)) {
+			$commerciaux = $object->thirdparty->getSalesRepresentatives($user);
+		}
+		if (!empty($commerciaux)) {
+			$commercial = array_pop($commerciaux);
+			if (!empty($commercial['id'])) {
+				if (static::USER_CACHE && isset(static::$user_cache[$commercial['id']])) {
+					$comuser = static::$user_cache[$commercial['id']];
+				}
+				else {
+					$comuser = new User($db);
+					$comuser->fetch($commercial['id']);
+					$comuser->getrights();
+					if (static::USER_CACHE)
+						static::$user_cache[$commercial['id']] = $comuser;
+				}
+			}
+			return $comuser;
+		}
+	}
+
 	public static function propal_relance_valid_between_days($options=[], $days_max=NULL, $days_min=NULL)
 	{
 		global $user, $db;
@@ -263,15 +294,19 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$object = new Propal($db);
 			$object->fetch($id);
 			$object->fetch_thirdparty();
+
+			if (empty($commercial = static::document_commercial($object)))
+				$commercial = $user;
+
+			if (!empty($options['update_fin_validite']) && is_numeric($options['update_fin_validite'])) {
+				$result = $object->set_echeance($commercial, dol_time_plus_duree($object->fin_validite, $options['update_fin_validite'], 'd'));
+			}
+
 			// c_email_templates
 			if (!empty($options['email']))
-				static::object_sendmail_template($user, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
+				static::object_sendmail_template($commercial, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
 			if (!empty($options['sms']))
-				static::object_sendsms($user, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
-
-			if (!empty($options['update_fin_validite'])) {
-				$result = $object->set_echeance($user, dol_time_plus_duree($object->date_validation,3,'d'));
-			}
+				static::object_sendsms($commercial, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
 
 			$nb++;
 			if ($nb>=static::RELANCE_MAX)
