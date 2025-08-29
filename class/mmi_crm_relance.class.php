@@ -11,6 +11,7 @@ require_once DOL_DOCUMENT_ROOT."/comm/action/class/actioncomm.class.php";
 require_once DOL_DOCUMENT_ROOT."/core/lib/date.lib.php";
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
+dol_include_once("/mmicommon/class/mmi_date.class.php");
 
 class mmi_crm_relance extends mmi_generic_1_0
 {
@@ -54,7 +55,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 	}
 
 	/**
-	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai
+	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai en jours ouvrés
 	 */
 	public static function object_relanceauto_agenda(User $user, CommonObject $object, $options=[])
 	{
@@ -87,7 +88,9 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$delai_default = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
 			$options['detai'] = is_numeric($delai_default) ?$delai_default :1;
 		}
-		$options['date'] = dol_now() + $options['delai'] * (24 * 3600);
+		$options['date'] = strtotime(mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']))+9*3600; // 9h00
+		//var_dump(date('Y-m-d'), $options['delai'], mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']), $options['date']); die();
+
 		$options['label'] = $langs->trans("RDVAutoRelanceAfterEmail");
 		$options['code'] = 'AC_RDV_AUTO';
 
@@ -190,7 +193,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine. Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine'."\r\n"
+				.'Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre'."\r\n"
+				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+				.'Belle journée ☀️';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
 		}
@@ -203,7 +209,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['sms'] = true;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine. Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine'."\r\n"
+				.'Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre'."\r\n"
+				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+				.'Belle journée ☀️';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
 		}

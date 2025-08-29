@@ -14,7 +14,7 @@ class ActionsMMICRM extends MMI_Actions_1_0
 		$error = 0; // Error counter
         $this->resprints = '';
 
-        //var_dump($parameters); die();
+        //var_dump($parameters, $object->trackid); die();
 		// If propal sent by email
 		if ($this->in_context($parameters, 'mail') && preg_match('/pro([0-9]+)/', $object->trackid, $matches)) {
 			
