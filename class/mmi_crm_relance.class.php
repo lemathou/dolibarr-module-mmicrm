@@ -8,8 +8,10 @@ require_once DOL_DOCUMENT_ROOT."/product/class/product.class.php";
 require_once DOL_DOCUMENT_ROOT.'/comm/propal/class/propal.class.php';
 require_once DOL_DOCUMENT_ROOT."/core/class/CSMSFile.class.php";
 require_once DOL_DOCUMENT_ROOT."/comm/action/class/actioncomm.class.php";
+require_once DOL_DOCUMENT_ROOT."/core/lib/date.lib.php";
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
+dol_include_once("/mmicommon/class/mmi_date.class.php");
 
 class mmi_crm_relance extends mmi_generic_1_0
 {
@@ -37,6 +39,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 	const PROPAL_RELANCE_EMAIL_TPL = 1;
 	const PROPAL_RELANCE_SMS_TPL = 1;
 
+	// User cache
+	const USER_CACHE = true; // Cache user object to avoid multiple fetch
+	protected static $user_cache = [];
+
 	public static function map($map, $string)
 	{
 		$map_from = $map_to = [];
@@ -49,7 +55,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 	}
 
 	/**
-	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai
+	 * Relance auto sur un objet (Propal, Commande, Facture, etc.) selon un délai en jours ouvrés
 	 */
 	public static function object_relanceauto_agenda(User $user, CommonObject $object, $options=[])
 	{
@@ -82,7 +88,9 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$delai_default = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
 			$options['detai'] = is_numeric($delai_default) ?$delai_default :1;
 		}
-		$options['date'] = dol_now() + $options['delai'] * (24 * 3600);
+		$options['date'] = strtotime(mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']))+9*3600; // 9h00
+		//var_dump(date('Y-m-d'), $options['delai'], mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']), $options['date']); die();
+
 		$options['label'] = $langs->trans("RDVAutoRelanceAfterEmail");
 		$options['code'] = 'AC_RDV_AUTO';
 
@@ -134,6 +142,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 			echo 'Missing campagne';
 			return false;
 		}
+
+		// @todo : get options from database
 		// Predefined campagnes
 		// @todo Mettre en dictionnaire ou table normale
 		elseif ($options['campagne'] == 'volet') {
@@ -147,12 +157,12 @@ class mmi_crm_relance extends mmi_generic_1_0
 			// Email overload
 			//$email_subject = 'Des conditions très intéressantes pour votre projet de volet piscine';
 			$email_subject = 'Reconduction de l\'offre fabricant pour votre projet de volet piscine';
-			$email_message = file_get_contents('tpl/email/'.$ref.'.tpl.html');
+			$email_message = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$ref.'.tpl.html');
 			$options['email_subject'] = $email_subject;
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$options['sms_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
+			$options['sms_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$ref.'.tpl.html');
 			$options['nopaylink'] = true;
 		}
 		elseif ($options['campagne'] == 'couverture') {
@@ -183,7 +193,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine. Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine'."\r\n"
+				.'Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre'."\r\n"
+				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+				.'Belle journée ☀️';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
 		}
@@ -196,7 +209,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['sms'] = true;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine. Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre. N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n".'Belle journée ☀️';
+			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine'."\r\n"
+				.'Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre'."\r\n"
+				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+				.'Belle journée ☀️';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
 		}
@@ -272,11 +288,36 @@ class mmi_crm_relance extends mmi_generic_1_0
 		}
 	}
 
+	public static function document_commercial($object)
+	{
+		global $db, $user;
+
+		/** @var CommonObject $object */
+		$commerciaux = $object->liste_contact(-1, 'internal');
+		if (empty($commerciaux)) {
+			$commerciaux = $object->thirdparty->getSalesRepresentatives($user);
+		}
+		if (!empty($commerciaux)) {
+			$commercial = array_pop($commerciaux);
+			if (!empty($commercial['id'])) {
+				if (static::USER_CACHE && isset(static::$user_cache[$commercial['id']])) {
+					$comuser = static::$user_cache[$commercial['id']];
+				}
+				else {
+					$comuser = new User($db);
+					$comuser->fetch($commercial['id']);
+					$comuser->getrights();
+					if (static::USER_CACHE)
+						static::$user_cache[$commercial['id']] = $comuser;
+				}
+			}
+			return $comuser;
+		}
+	}
+
 	public static function propal_relance_valid_between_days($options=[], $days_max=NULL, $days_min=NULL)
 	{
 		global $user, $db;
-
-		$ref = 'propal_relance_valid_between_days';
 
 		if (is_null($options['days_max']))
 			$options['days_max'] = static::DAYS_MAX;
@@ -284,12 +325,18 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['days_min'] = static::DAYS_MIN;
 		if (! isset($options['days_lastemail']))
 			$options['days_lastemail'] = static::DAYS_LASTMAIL;
+		if (! isset($options['email_subject']))
+			$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
+		if (is_null($options['tplref']))
+			$options['tplref'] = 'propal_relance_valid_between_days';
+		if (is_null($options['update_fin_validite']))
+			$options['update_fin_validite'] = 0;
+
 		//var_dump($days);
 
 		// Different possible cases
-		$options['email_subject'] = 'J-'.static::DAYS_MAX.' pour profiter de votre offre';
-		$options['email_message'] = file_get_contents('tpl/email/'.$ref.'.tpl.html');
-		$options['sms_message'] = file_get_contents('tpl/sms/'.$ref.'.tpl.html');;
+		$options['email_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$options['tplref'].'.tpl.html');
+		$options['sms_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/sms/'.$options['tplref'].'.tpl.html');;
 
 		// Devis ouverts,
 		// échus dans un intervalle entre $days_min et $days_max jours,
@@ -319,10 +366,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$q = $db->query($sql);
 		$nb_total = $q->num_rows;
 		echo '<p>Total : '.$nb_total.'</p>';
-		
+
 		if (!empty($options['justcount']))
 			return;
-		
+
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
@@ -331,12 +378,20 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$object->fetch($id);
 			// @todo voir si on le fait en auto dans object_sendsms()
 			$object->fetch_thirdparty();
+
+			if (empty($commercial = static::document_commercial($object)))
+				$commercial = $user;
+
+			if (!empty($options['update_fin_validite']) && is_numeric($options['update_fin_validite'])) {
+				$result = $object->set_echeance($commercial, dol_time_plus_duree($object->fin_validite, $options['update_fin_validite'], 'd'));
+			}
+
 			// c_email_templates
 			$options['email_sms_noauto'] = 1; // @todo No auto SMS after email Actually we do not need this option because we use massaction to send emails
 			if (!empty($options['email']))
-				static::object_sendmail_template($user, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
+				static::object_sendmail_template($commercial, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
 			if (!empty($options['sms']))
-				static::object_sendsms($user, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
+				static::object_sendsms($commercial, $object, static::PROPAL_RELANCE_SMS_TPL, $options);
 
 			$nb++;
 			if ($nb>=static::RELANCE_MAX)
@@ -355,7 +410,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		$_POST['oneemailperrecipient'] = 'on';
 		$_POST['addmaindocfile'] = 'on';
 		$_POST['sendmail'] = 'on';
-	
+
 		$object_type = get_class($object);
 		$objectclass = $object_type;
 		$type = strtolower($object_type);
@@ -393,7 +448,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		if (empty($projet)) {
 			$projet = ' '.static::PROJECT_DEFAULT_NAME;
 		}
-		
+
 		// Client
 		$thirdparty = $object->thirdparty;
 		//var_dump($thirdparty); die();
@@ -451,7 +506,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		];
 		$_POST['subject'] = $options['email_subject'];
 		$_POST['message'] = static::map($message_map, $options['email_message']);
-		
+
 		if($recap) {
 			echo '<hr />';
 			echo '<p><i>EMAIL</i></p>';
@@ -564,7 +619,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		];
 		$body = static::map($message_map, $options['sms_message']);
 		//var_dump($body); die();
-		
+
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
 			$sendto=$thirdparty->contact_get_property($receiver, 'mobile');
 		}
