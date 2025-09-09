@@ -86,6 +86,7 @@ Extrafield_relance_disp = Affichage dans les Relances
 ExtrafieldToolTip_relance_disp = Seront affichées dans les EMails, SMS, etc.
 Extrafield_fk_topic_main = Qualification demande client
 ExtrafieldToolTip_fk_topic_main = Sera utilisée dans les communications automatiques (Email, SMS) pour qualifier le document
+Extrafield_propal_echeancedecalauto = La propale a bénéficié d'un report d'échéance automatique J+2 avec relance
 
 RDVAutoRelanceAfterEmail = Relance automatique après envoi par email
 

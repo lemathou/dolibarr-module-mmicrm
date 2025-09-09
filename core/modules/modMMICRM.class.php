@@ -470,6 +470,7 @@ class modMMICRM extends DolibarrModules
 
 		// Propal
 		$extrafields->addExtraField('fk_topic_main', $langs->trans('Extrafield_fk_topic_main'), 'sellist',  100,  "", 'propal',  0, 0, '', "a:1:{s:7:\"options\";a:1:{s:33:\"c_propal_topic_main:label:rowid::\";N;}}", 1,'', -1, $langs->trans('ExtrafieldToolTip_fk_topic_main'), '', $conf->entity, 'mmidocuments@mmidocuments', '$conf->mmidocuments->enabled && $conf->global->MMI_CRM_TOPIC_MAIN_ACTIVE', 0);
+		$extrafields->addExtraField('echeancedecalauto', $langs->trans('Extrafield_propal_echeancedecalauto'), 'boolean',  100,  "", 'propal',  0, 0, '', "", 1,'', 4, $langs->trans('ExtrafieldToolTip_propal_echeancedecalauto'), '', $conf->entity, 'mmiproject@mmicrm', '$conf->mmicrm->enabled', 0);
 
 		// Commande
 		$extrafields->addExtraField('fk_topic_main', $langs->trans('Extrafield_fk_topic_main'), 'sellist',  100,  "", 'commande',  0, 0, '', "a:1:{s:7:\"options\";a:1:{s:33:\"c_propal_topic_main:label:rowid::\";N;}}", 1,'', -1, $langs->trans('ExtrafieldToolTip_fk_topic_main'), '', $conf->entity, 'mmidocuments@mmidocuments', '$conf->mmidocuments->enabled && $conf->global->MMI_CRM_TOPIC_MAIN_ACTIVE', 0);

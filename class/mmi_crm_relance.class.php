@@ -345,6 +345,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//, , DATEDIFF(d.fin_validite, NOW()) AS datediff
 		$sql = 'SELECT DISTINCT d.rowid
 			FROM '.MAIN_DB_PREFIX.'propal d
+			LEFT JOIN '.MAIN_DB_PREFIX.'propal_extrafields d2 ON d2.fk_object=d.rowid
 			INNER JOIN '.MAIN_DB_PREFIX.'societe s
 				ON s.rowid=d.fk_soc
 			LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm am
@@ -359,6 +360,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 				.' AND DATEDIFF(d.fin_validite, NOW()) >= '.$options['days_min'].' AND DATEDIFF(d.fin_validite, NOW()) <= '.$options['days_max']
 				.(isset($options['price_min']) && is_numeric($options['price_min']) ?' AND d.total_ht >= "'.$options['price_min'].'"' :'')
 				.(isset($options['price_max']) && is_numeric($options['price_max']) ?' AND d.total_ht <= "'.$options['price_max'].'"' :'')
+				.(!empty($options['update_fin_validite']) ?' AND (d2.echeancedecalauto IS NULL OR d2.echeancedecalauto=0)' :'')
 			.' GROUP BY d.rowid';
 		echo '<pre>'.$sql.'</pre>';
 
@@ -382,8 +384,15 @@ class mmi_crm_relance extends mmi_generic_1_0
 			if (empty($commercial = static::document_commercial($object)))
 				$commercial = $user;
 
-			if (!empty($options['update_fin_validite']) && is_numeric($options['update_fin_validite'])) {
-				$result = $object->set_echeance($commercial, dol_time_plus_duree($object->fin_validite, $options['update_fin_validite'], 'd'));
+			if (!empty($options['update_fin_validite'])) {
+				if (empty($object->array_options['options_echeancedecalauto'])) {
+					$result = $object->set_echeance($commercial, dol_time_plus_duree($object->fin_validite, $options['update_fin_validite'], 'd'));
+					$object->array_options['options_echeancedecalauto'] = 1;
+					$result = $object->insertExtraFields();
+				}
+				else {
+					continue; // No more !
+				}
 			}
 
 			// c_email_templates
