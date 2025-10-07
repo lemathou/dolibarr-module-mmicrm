@@ -53,6 +53,11 @@ MMI_CRM_RELANCE_AFTER_MAIL_AUTO = Création relance auto après l'envoi d'un ema
 MMI_CRM_RELANCE_AFTER_MAIL_AUTO_ONLYIFNOT = Création relance auto uniquement si pas de relance déjà créée
 MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI = Délai (jours) de création relance auto
 
+MMI_CRM_ORDER = Options des commandes
+MMI_CRM_ORDER_DISCOUNT_LOYALTY_ACTIVE = Activer les remises fidélité sur les commandes
+MMI_CRM_ORDER_DISCOUNT_LOYALTY_NB = Nombre de commandes pour bénéfier d'une remise fidélité
+MMI_CRM_ORDER_DISCOUNT_LOYALTY_RATE = Taux de la remise fidélité (pourcentage)
+
 #
 # About page
 #

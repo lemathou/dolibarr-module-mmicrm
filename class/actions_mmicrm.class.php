@@ -2,6 +2,7 @@
 
 dol_include_once('custom/mmicommon/class/mmi_actions.class.php');
 dol_include_once('custom/mmicrm/class/mmi_crm_relance.class.php');
+dol_include_once('custom/mmicrm/class/mmi_crm_loyalty.class.php');
 
 class ActionsMMICRM extends MMI_Actions_1_0
 {
@@ -42,6 +43,26 @@ class ActionsMMICRM extends MMI_Actions_1_0
 				$delai = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
 				$ret = mmi_crm_relance::object_relanceauto_agenda($user, $object, ['delai'=>$delai]);
 			}
+		}
+
+		if (!$error) {
+			return 0; // or return 1 to replace standard code
+		} else {
+			$this->errors[] = 'Error message';
+			return -1;
+		}
+	}
+
+	public function formAddObjectLine($parameters, &$object, &$action, $hookmanager)
+	{
+		global $conf, $user, $langs;
+
+		$error = 0; // Error counter
+		$notices = []; // Notices
+        $this->resprints = '';
+
+		if ($this->in_context($parameters, 'ordercard')) {
+			mmi_crm_loyalty::customer_order_discount_loyalty($object->socid);
 		}
 
 		if (!$error) {

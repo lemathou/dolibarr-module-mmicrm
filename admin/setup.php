@@ -51,6 +51,11 @@ $arrayofparameters = array(
 	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO_ONLYIFNOT'=>array('type'=>'yesno', 'enabled'=>1),
 	'MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI'=>array('type'=>'int', 'enabled'=>1),
+
+	'MMI_CRM_ORDER'=>array('type'=>'separator', 'enabled'=>1),
+	'MMI_CRM_ORDER_DISCOUNT_LOYALTY_ACTIVE'=>array('type'=>'yesno', 'enabled'=>1),
+	'MMI_CRM_ORDER_DISCOUNT_LOYALTY_NB'=>array('type'=>'int', 'enabled'=>1),
+	'MMI_CRM_ORDER_DISCOUNT_LOYALTY_RATE'=>array('type'=>'decimal', 'enabled'=>1),
 );
 
 require_once('../../mmicommon/admin/mmisetup_1.inc.php');
