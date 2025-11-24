@@ -27,7 +27,7 @@ class mmi_crm_loyalty extends mmi_generic_1_0
 		} else {
 			$nb = 0;
 		}
-		var_dump($sql, $obj, $nb);
+		//var_dump($sql, $obj, $nb);
 		if ($nb%$seuil == 0 && $nb >= $seuil) {
 			//setEventMessage($langs->transnoentities('OrderInValidatedStatusAlert',$urlList),'warnings');
 			setEventMessage('ATTENTION - déjà '.$nb.' commandes ! Le client bénéficie d\'une REMISE FIDELITE de '.getDolGlobalInt('MMI_CRM_ORDER_DISCOUNT_LOYALTY_RATE').'%','warnings');
