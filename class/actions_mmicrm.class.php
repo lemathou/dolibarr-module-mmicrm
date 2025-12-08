@@ -22,12 +22,10 @@ class ActionsMMICRM extends MMI_Actions_1_0
 			$id = $matches[1];
 			$propal = new Propal($this->db);
 			$propal->fetch($id);
-			$object = $propal; // Set object to propal for further processing
-			$object->fetch_thirdparty();
-			//var_dump($id, $object); die();
+			$propal->fetch_thirdparty();
 
 			// Send SMS after email
-			if (getDolGlobalInt('MMI_CRM_SMS_AFTER_MAIL_AUTO')) {
+			if (getDolGlobalInt('MMI_CRM_SMS_AFTER_MAIL_AUTO') && empty($object->sendoptions['email_sms_noauto'])) {
 				// Par défaut
 				$options = [
 					'recap' => 1,
@@ -35,13 +33,13 @@ class ActionsMMICRM extends MMI_Actions_1_0
 					'sms_message' => getDolGlobalString('MMI_CRM_SMS_AFTER_MAIL_MSG'),
 					'nopaylink' => 1, // No payment link in SMS
 				];
-				$ret = mmi_crm_relance::object_sendsms($user, $object, mmi_crm_relance::PROPAL_RELANCE_SMS_TPL, $options);
+				$ret = mmi_crm_relance::object_sendsms($user, $propal, mmi_crm_relance::PROPAL_RELANCE_SMS_TPL, $options);
 				//var_dump($ret); die();
 			}
 			// Create actioncomm after email
-			if (getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO')) {
+			if (getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO') && empty($object->sendoptions['email_rdv_noauto'])) {
 				$delai = getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO_DELAI');
-				$ret = mmi_crm_relance::object_relanceauto_agenda($user, $object, ['delai'=>$delai]);
+				$ret = mmi_crm_relance::object_relanceauto_agenda($user, $propal, ['delai'=>$delai]);
 			}
 		}
 

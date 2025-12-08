@@ -2,4 +2,12 @@
 
 ## 1.0
 
-Initial version
+-Initial version
+
+## 1.1
+
+Fix bad emoticones in SMS templates.
+Option so that there is no automatic appointment created after email sent.
+Option so tha there is no automatoc SMS sent after email sent.
+
+

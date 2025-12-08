@@ -41,6 +41,7 @@ $relance_options = [
 	'email_subject' => 'Dernière chance pour profiter de votre offre',
 	'tplref' => 'propal_relance_valid_after_days',
 	'update_fin_validite' => 4, // Adds 4 days (-2 to +2)
+	'rdv_noauto'	=> 1, // Do not create an appointment
 ];
 
 mmi_crm_relance::propal_relance_valid_between_days($relance_options);

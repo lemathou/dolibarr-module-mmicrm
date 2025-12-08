@@ -193,10 +193,10 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['email_message'] = $email_message;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine'."\r\n"
+			$sms_message = 'Bonjour, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture piscine'."\r\n"
 				.'Je souhaite vous faire bénéficier en priorité d\'une nouvelle offre de notre fabricant uniquement valable sur les 100 premières commandes validées entre le 15 Août et le 13 Septembre'."\r\n"
 				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
-				.'Belle journée ☀️';
+				.'Belle journée';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
 		}
@@ -206,15 +206,32 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['ref_client'] = 'couverture';
 			$options['date_validite_debut'] = '2024-01-01';
 			$options['date_validite_fin'] = '2024-06-30';
+			$options['amount_min'] = '1000';
 			$options['sms'] = true;
 
 			// SMS Overload
-			$sms_message = 'Bonjour 👋, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine'."\r\n"
-				.'Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre'."\r\n"
-				.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
-				.'Belle journée ☀️';
+			$sms_message = 'Bonjour, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine'."\r\n"
+			.'Si celui-ci est toujours d\'actualité, je vous informe de conditions très intéressantes proposées par nos fabricants français de bâches et volets entre le 15 Août et le 13 Septembre'."\r\n"
+			.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+			.'Belle journée';
 			$options['sms_message'] = $sms_message;
 			$options['nopaylink'] = true;
+		}
+		elseif ($options['campagne'] == 'younited_1000') {
+			// Set campagne options
+			$options['fk_statut'] = 0;
+			$options['ref_client'] = 'couverture';
+			$options['date_validite_debut'] = date('Y-m-d', time()+86400*2); // From 2 days future
+			// $options['date_validite_fin'] = '2025-06-30';
+			$options['sms'] = true;
+
+			// SMS Overload
+			$sms_message = 'Bonjour, c\'est {$commercial_website_name}, je reviens vers vous concernant votre projet de couverture de piscine'."\r\n"
+			.'Nous venons de mettre en palce une offre de financement avec Younited Pay, sur 10 mois, pour laquelle nous prenons en chare le coût du crédit.'."\r\n"
+			.'N\'hésitez pas à me recontacter : {$commercial_tel} ou {$commercial_email}'."\r\n"
+			.'Belle journée';
+			$options['sms_message'] = $sms_message;
+			// $options['nopaylink'] = true;
 		}
 		else {
 			echo 'Bad/Unknown campagne';
@@ -396,7 +413,16 @@ class mmi_crm_relance extends mmi_generic_1_0
 			}
 
 			// c_email_templates
-			$options['email_sms_noauto'] = 1; // @todo No auto SMS after email Actually we do not need this option because we use massaction to send emails
+			$options['email_sendoptions'] = [];
+			if (!empty($options['sms'])) {
+				// So that a generic SMS is not sent automatically after email
+				$options['email_sendoptions']['email_sms_noauto']=1;
+			}
+			if (!empty($options['rdv_noauto'])) {
+				// So that agenda event is not set automatically after email
+				$options['email_sendoptions']['email_rdv_noauto']=1;
+			}
+
 			if (!empty($options['email']))
 				static::object_sendmail_template($commercial, $object, static::PROPAL_RELANCE_EMAIL_TPL, $options);
 			if (!empty($options['sms']))
@@ -414,6 +440,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		$recap = !empty($options['recap']);
 		$send = !empty($options['email_send']);
+		$sendoptions = !empty($options['email_sendoptions']) ?$options['email_sendoptions'] :[];
 
 		$massaction = 'confirm_presend';
 		$_POST['oneemailperrecipient'] = 'on';
@@ -464,6 +491,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//var_dump($thirdparty->nom); die();
 
 		// Commercial
+		// @todo use propal contact if any
 		$commerciaux = $thirdparty->getSalesRepresentatives($user);
 		//var_dump($commerciaux);
 		if (!empty($commerciaux)) {
