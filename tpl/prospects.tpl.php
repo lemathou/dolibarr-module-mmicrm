@@ -36,6 +36,16 @@ while($row = $q->fetch_array()) {
 	$p_group_list[$row['value']] = $row;
 }
 
+$user_list = [];
+$sql = 'SELECT rowid AS `value`, CONCAT(firstname, " ", lastname) AS label
+	FROM `'.MAIN_DB_PREFIX.'user`
+	ORDER BY `statut` DESC, `lastname`, `firstname`';
+//echo $sql;
+$q = $db->query($sql);
+while($row = $q->fetch_array()) {
+	$user_list[$row['value']] = $row;
+}
+//var_dump($user_list);
 
 function date_fromsql($date)
 {
@@ -62,7 +72,7 @@ function col_filter_aff($filter_name)
 	if (empty($filter_list[$filter_name]))
 		return '';
 
-	if ($filter_list[$filter_name]['type'] == 'string') {
+	if (in_array($filter_list[$filter_name]['type'], ['string', 'int'])) {
 		return '<input name="filters['.$filter_name.']" value="'.(!empty($filters[$filter_name]) ?$filters[$filter_name] :'').'" />';
 	}
 	elseif ($filter_list[$filter_name]['type'] == 'radio') {
@@ -94,6 +104,7 @@ $sql_where = [];
 $sql_having = [];
 
 echo '<form method="GET">';
+echo '<input type="hidden" name="cols_save" value="1" />';
 echo '<p>Raccourcis :';
 echo ' <a href="?">TOUT</a>';
 echo ' | <a href="?filters[cmd_nb_min]=1&filters[cmd_nb_max]=1">Une seule commande</a>';
@@ -158,6 +169,12 @@ $filter_list = [
 		'type' => 'int',
 		'sql_join' => 'k', // Pas évident, la table peut service à plusieurs cas de figures
 		'sql_where' => 'k.fk_soc IS NULL',
+	],
+	'relance_histo_user' => [
+		'label' => 'Relancé par utilisateur',
+		'type' => 'select',
+		'list' => $user_list,
+		'sql_where' => '(SELECT COUNT(k2.rowid) FROM '.MAIN_DB_PREFIX.'contacttracking AS k2 WHERE k2.fk_soc=s.rowid AND k2.fk_user_creat = %value LIMIT 1) > 0',
 	],
 	'relance_not_before_cmd' => [
 		'label' => 'Pas relancé depuis dernière commande',
@@ -372,21 +389,34 @@ foreach($filter_list as $i=>$j) {
 echo '</td>';
 
 $cols_list = [
+	'ville' => ['label'=>'Ville'],
+	'commercial' => ['label'=>'Commercial'],
 	'cmd_tot_mt' => ['label'=>'Commandes : Montant total'],
+	'code_client' => ['label'=>'Code client'],
 ];
 $cols = GETPOST('cols', 'array');
-echo '<td>Colonnes supplémentaires :<br /><select name="cols[]" multiple>';
+if (GETPOST('cols_save', 'int')) {
+	// Soumission du formulaire de filtres -> on mémorise le choix (même vide)
+	if (!function_exists('dol_set_user_param'))
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/functions2.lib.php';
+	dol_set_user_param($db, $conf, $user, ['MMICRM_PROSPECTS_COLS' => implode(',', $cols)]);
+}
+elseif (!GETPOSTISSET('cols') && !empty($user->conf->MMICRM_PROSPECTS_COLS)) {
+	// Pas de cols dans l'URL (arrivée sur la page, raccourci) -> préférence sauvegardée
+	$cols = explode(',', $user->conf->MMICRM_PROSPECTS_COLS);
+}
+echo '<td>Colonnes optionnelles :<br />';
 foreach($cols_list as $i=>$j) {
 	if (in_array($i, $cols)) {
-		$selected = ' selected';
+		$checked = ' checked';
 		$filters_url .= '&cols[]='.$i;
 	}
 	else {
-		$selected = '';
+		$checked = '';
 	}
-	echo '<option value="'.$i.'"'.$selected.'>'.$j['label'].'</option>';
+	echo '<label><input type="checkbox" name="cols[]" value="'.$i.'"'.$checked.' style="width: auto;" /> '.$j['label'].'</label><br />';
 }
-echo '</select></td>';
+echo '</td>';
 
 $sort_list = [
 	'nom' => [
@@ -585,6 +615,21 @@ if (! empty($l_s)) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row2);
 		}
 	}
+
+	// Commercial (colonne optionnelle)
+	if (in_array('commercial', $cols)) {
+		$sql = 'SELECT sc.fk_soc AS rowid,
+				GROUP_CONCAT(DISTINCT CONCAT(u.firstname, " ", u.lastname) SEPARATOR ", ") AS commercial
+			FROM '.MAIN_DB_PREFIX.'societe_commerciaux sc
+			INNER JOIN '.MAIN_DB_PREFIX.'user u ON u.rowid = sc.fk_user
+			WHERE sc.fk_soc IN ('.implode(', ', $l_s).')
+			GROUP BY sc.fk_soc';
+		//echo $sql;
+		$q = $db->query($sql);
+		while($row = $q->fetch_assoc()) {
+			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
+		}
+	}
 }
 
 foreach($l as &$row) {
@@ -635,7 +680,12 @@ echo '<tr>';
 echo '<th rowspan="2">'.col_sort_aff('nom').'</th>';
 //echo '<th rowspan="2">Nom alternatif</th>';
 echo '<th rowspan="2">Groupe</th>';
-echo '<th rowspan="2">Ville</th>';
+if (in_array('ville', $cols))
+	echo '<th rowspan="2">Ville</th>';
+if (in_array('commercial', $cols))
+	echo '<th rowspan="2">Commercial</th>';
+if (in_array('code_client', $cols))
+	echo '<th rowspan="2">Code client</th>';
 echo '<th width="100">Dernière Action/Modif</th>';
 echo '<th width="100" colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
@@ -657,7 +707,12 @@ echo '</tr>';
 echo '<tr>';
 echo '<th>'.col_filter_aff('client_nom').'</th>';
 echo '<th>'.col_filter_aff('groupe_client_pro').'<br />'.col_filter_aff('groupe_client').'</th>';
-echo '<th>'.col_filter_aff('client_ville').'</th>';
+if (in_array('ville', $cols))
+	echo '<th>'.col_filter_aff('client_ville').'</th>';
+if (in_array('commercial', $cols))
+	echo '<th></th>';
+if (in_array('code_client', $cols))
+	echo '<th></th>';
 echo '<th>'.col_filter_aff('client_lastupdate').'</th>';
 echo '<th>'.col_filter_aff('prospect').'</th>';
 if (in_array('cmd_tot_mt', $cols))
@@ -665,7 +720,7 @@ if (in_array('cmd_tot_mt', $cols))
 echo '<th>'.col_filter_aff('commande_last').'</th>';
 echo '<th>'.col_filter_aff('mt').'</th>';
 echo '<th>'.col_filter_aff('nb').'</th>';
-echo '<th>'.col_filter_aff('relance_not_before_cmd').'</th>';
+echo '<th>'.col_filter_aff('relance_not_before_cmd').'<br />'.col_filter_aff('relance_histo_user').'</th>';
 echo '<th>'.col_filter_aff('relance_next').'</th>';
 echo '</tr>';
 
@@ -674,7 +729,12 @@ foreach($l as $row) {
 	echo '<tr>';
 	echo '<td><a href="/comm/card.php?socid='.$row['rowid'].'">'.$row['nom'].'</a>'.(!empty($row['name_alias']) ?' ('.$row['name_alias'].')' :'').'</td>';
 	echo '<td>'.(!empty($row['p_group']) ?$p_groups[$row['p_group']]['label'] :'').'</td>';
-	echo '<td>'.$row['town'].'</td>';
+	if (in_array('ville', $cols))
+		echo '<td>'.$row['town'].'</td>';
+	if (in_array('commercial', $cols))
+		echo '<td>'.dol_escape_htmltag($row['commercial'] ?? '').'</td>';
+	if (in_array('code_client', $cols))
+		echo '<td>'.dol_escape_htmltag($row['code_client'] ?? '').'</td>';
 	echo '<td class="center">'.date_fromsql(max($row['udates'])).'</td>';
 	echo '<td class="cmd num">'.$row['tot_nb'].'</td>';
 	if (in_array('cmd_tot_mt', $cols))
