@@ -235,6 +235,12 @@ $filter_list = [
 		'sql_where' => 's2.p_group > 3',
 		'col_only' => true,
 	],
+	'commercial' => [
+		'label' => 'Commercial',
+		'type' => 'select',
+		'list' => $user_list,
+		'sql_where' => '(SELECT COUNT(scf.rowid) FROM '.MAIN_DB_PREFIX.'societe_commerciaux scf WHERE scf.fk_soc = s.rowid AND scf.fk_user = %value LIMIT 1) > 0',
+	],
 ];
 
 $filters_url = '';
@@ -710,7 +716,7 @@ echo '<th>'.col_filter_aff('groupe_client_pro').'<br />'.col_filter_aff('groupe_
 if (in_array('ville', $cols))
 	echo '<th>'.col_filter_aff('client_ville').'</th>';
 if (in_array('commercial', $cols))
-	echo '<th></th>';
+	echo '<th>'.col_filter_aff('commercial').'</th>';
 if (in_array('code_client', $cols))
 	echo '<th></th>';
 echo '<th>'.col_filter_aff('client_lastupdate').'</th>';
