@@ -36,16 +36,20 @@ while($row = $q->fetch_array()) {
 	$p_group_list[$row['value']] = $row;
 }
 
-$user_list = [];
-$sql = 'SELECT rowid AS `value`, CONCAT(firstname, " ", lastname) AS label
-	FROM `'.MAIN_DB_PREFIX.'user`
-	ORDER BY `statut` DESC, `lastname`, `firstname`';
-//echo $sql;
-$q = $db->query($sql);
-while($row = $q->fetch_array()) {
-	$user_list[$row['value']] = $row;
+// Combo utilisateurs natif Dolibarr (tri : actifs d'abord puis prénom, inactifs en fin)
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+$form = new Form($db);
+
+/**
+ * Rend un combo "utilisateur" Dolibarr pour un filtre (commercial, relancé par, ...).
+ * forcecombo=1 : select natif (pas de select2 ajax, incompatible avec name="filters[...]").
+ */
+function user_filter_select($name, $value)
+{
+	global $form;
+	$selected = (isset($value) && $value !== '' && (int) $value > 0) ? (int) $value : '';
+	return $form->select_dolusers($selected, 'filters['.$name.']', 1, null, 0, '', '', 0, 0, 0, '', 0, '', 'crmuserfilter maxwidth200', 0, 0, false, 1);
 }
-//var_dump($user_list);
 
 function date_fromsql($date)
 {
@@ -74,6 +78,9 @@ function col_filter_aff($filter_name)
 
 	if (in_array($filter_list[$filter_name]['type'], ['string', 'int'])) {
 		return '<input name="filters['.$filter_name.']" value="'.(!empty($filters[$filter_name]) ?$filters[$filter_name] :'').'" />';
+	}
+	elseif ($filter_list[$filter_name]['type'] == 'userselect') {
+		return user_filter_select($filter_name, $filters[$filter_name] ?? '');
 	}
 	elseif ($filter_list[$filter_name]['type'] == 'radio') {
 		$ret = '<select name="filters['.$filter_name.']" onchange="this.form.submit()"><option value="">--</option>';
@@ -172,8 +179,7 @@ $filter_list = [
 	],
 	'relance_histo_user' => [
 		'label' => 'Relancé par utilisateur',
-		'type' => 'select',
-		'list' => $user_list,
+		'type' => 'userselect',
 		'sql_where' => '(SELECT COUNT(k2.rowid) FROM '.MAIN_DB_PREFIX.'contacttracking AS k2 WHERE k2.fk_soc=s.rowid AND k2.fk_user_creat = %value LIMIT 1) > 0',
 	],
 	'relance_not_before_cmd' => [
@@ -237,8 +243,7 @@ $filter_list = [
 	],
 	'commercial' => [
 		'label' => 'Commercial',
-		'type' => 'select',
-		'list' => $user_list,
+		'type' => 'userselect',
 		'sql_where' => '(SELECT COUNT(scf.rowid) FROM '.MAIN_DB_PREFIX.'societe_commerciaux scf WHERE scf.fk_soc = s.rowid AND scf.fk_user = %value LIMIT 1) > 0',
 	],
 ];
@@ -250,7 +255,12 @@ if (!is_array($filters))
 echo '<td>';
 foreach($filter_list as $i=>$j) {
 
-	if ($j['type']=='select') {
+	if ($j['type']=='userselect') {
+		if (!empty($filters[$i]) && (int) $filters[$i] > 0 && !empty($j['sql_where']))
+			$sql_where[] = str_replace('%value', (int) $filters[$i], $j['sql_where']);
+		echo '<label>'.$j['label'].' '.user_filter_select($i, $filters[$i] ?? '').'</label><br />';
+	}
+	elseif ($j['type']=='select') {
 		echo '<select name="filters['.$i.']" onchange="this.form.submit()"><option value="">--</option>';
 		foreach($j['list'] as $i2=>$j2) {
 			if (!empty($filters[$i]) && $filters[$i]==$i2) {
@@ -757,3 +767,6 @@ foreach($l as $row) {
 echo '</table>';
 
 echo '</form>';
+
+// Auto-submit des combos utilisateur natifs (Form::select_dolusers) au changement
+echo '<script>jQuery(function($){ $(".crmuserfilter").on("change", function(){ this.form.submit(); }); });</script>';
