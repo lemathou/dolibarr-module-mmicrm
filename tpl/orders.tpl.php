@@ -89,7 +89,7 @@ while($row=$q->fetch_assoc()) {
 $sql  = 'SELECT c.rowid AS fk_commande, e.rowid, e.ref, e.date_creation, e.date_valid'
 	.' '.$sql_from
 	.' INNER JOIN '.MAIN_DB_PREFIX.'commandedet cl ON cl.fk_commande=c.rowid'
-	.' INNER JOIN '.MAIN_DB_PREFIX.'expeditiondet el ON el.fk_origin_line=cl.rowid'
+	.' INNER JOIN '.MAIN_DB_PREFIX.'expeditiondet el ON el.fk_elementdet=cl.rowid'
 	.' INNER JOIN '.MAIN_DB_PREFIX.'expedition e ON e.rowid=el.fk_expedition'
 	.' WHERE '.$sql_where
 	.' GROUP BY e.rowid';
