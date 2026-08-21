@@ -559,24 +559,25 @@ if (! empty($l_s)) {
 	}
 
 	$l_a = [];
-	// Actioncom (Prochaines Relances)
-	$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_nb, MAX(a.datep) as a_last_date, MAX(a.id) as a_last_rowid
+	// Actioncom (prochaines relances = événements à venir)
+	// La ligne retenue est la plus PROCHE (MIN(datep)) : SUBSTRING_INDEX(GROUP_CONCAT(...))
+	// est l'idiome MySQL du « id de la ligne qui porte l'extremum ». MAX(a.id) ne le
+	// garantissait pas, et MAX(a.datep) affichait la relance la plus LOINTAINE.
+	$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_nb, MIN(a.datep) AS a_last_date,
+			SUBSTRING_INDEX(GROUP_CONCAT(a.id ORDER BY a.datep ASC, a.id ASC), \',\', 1) AS a_last_rowid
 		FROM '.MAIN_DB_PREFIX.'actioncomm a
 		WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep > NOW()
 		GROUP BY a.fk_soc';
-	//echo $sql;
 	$q = $db->query($sql);
-	//var_dump($q);
 	while($row = $q->fetch_assoc()) {
 		$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
-		$l_a[] = $row['a_last_rowid'];
+		$l_a[] = (int) $row['a_last_rowid'];
 	}
 	if (!empty($l_a)) {
 		$sql = 'SELECT a.fk_soc AS rowid, u.firstname AS a_last_user_firstname, u.lastname AS a_last_user_lastname
 			FROM '.MAIN_DB_PREFIX.'actioncomm a
 			LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
 			WHERE a.id IN ('.implode(', ', $l_a).')';
-		//echo $sql;
 		$q = $db->query($sql);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
@@ -584,27 +585,32 @@ if (! empty($l_s)) {
 	}
 
 	$l_a2 = [];
-	// Actioncom (Dernière actions)
+	// Actioncom (derniers événements RÉALISÉS — RM2779)
+	// Ces données étaient déjà calculées mais jamais affichées, et la boucle interne
+	// réutilisait $row/$q de la boucle externe : l'itération s'arrêtait à la première
+	// société. L'alias a_last_rowid écrasait en plus l'id de la prochaine relance.
 	if (!empty($l_s)) {
-		$sql = 'SELECT a.fk_soc AS rowid, MAX(a.datep) AS a_before_last_date
+		$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_past_nb, MAX(a.datep) AS a_past_last_date,
+				SUBSTRING_INDEX(GROUP_CONCAT(a.id ORDER BY a.datep DESC, a.id DESC), \',\', 1) AS a_past_last_rowid
 			FROM '.MAIN_DB_PREFIX.'actioncomm a
 			WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep <= NOW()
 			GROUP BY a.fk_soc';
-		//echo $sql;
 		$q = $db->query($sql);
-		//var_dump($q);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
-			//
-			$sql = 'SELECT a.fk_soc AS rowid, a.id AS a_last_rowid, u.firstname AS a_before_last_user_firstname, u.lastname AS a_before_last_user_lastname
-				FROM '.MAIN_DB_PREFIX.'actioncomm a
-				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
-				WHERE a.fk_soc='.$row['rowid'].' AND a.datep = "'.$row['a_before_last_date'].'"';
-			//echo $sql;
-			$q = $db->query($sql);
-			while($row = $q->fetch_assoc()) {
-				$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
-			}
+			$l_a2[] = (int) $row['a_past_last_rowid'];
+		}
+	}
+	if (!empty($l_a2)) {
+		$sql = 'SELECT a.fk_soc AS rowid, a.label AS a_past_last_label, ca.libelle AS a_past_last_type,
+				u.firstname AS a_past_last_user_firstname, u.lastname AS a_past_last_user_lastname
+			FROM '.MAIN_DB_PREFIX.'actioncomm a
+			LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=a.fk_user_action
+			LEFT JOIN '.MAIN_DB_PREFIX.'c_actioncomm ca ON ca.id=a.fk_action
+			WHERE a.id IN ('.implode(', ', $l_a2).')';
+		$q = $db->query($sql);
+		while($row = $q->fetch_assoc()) {
+			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
 		}
 	}
 
@@ -648,16 +654,20 @@ if (! empty($l_s)) {
 	}
 }
 
+// « Dernière action/modif » : uniquement des dates PASSÉES. a_last_date est la
+// prochaine relance (datep > NOW()) : l'inclure faisait afficher une date future
+// dans une colonne censée dire quand le tiers a bougé pour la dernière fois.
 foreach($l as &$row) {
 	$row['udates'] = [$row['tms']];
 	if (isset($row['k_last_date']))
 		$row['udates'][] = $row['k_last_date'];
 	if (isset($row['c_last_date']))
 		$row['udates'][] = $row['c_last_date'];
-	if (isset($row['a_last_date']))
-		$row['udates'][] = $row['a_last_date'];
+	if (isset($row['a_past_last_date']))
+		$row['udates'][] = $row['a_past_last_date'];
 	$row['udate'] = max($row['udates']);
 }
+unset($row);
 
 // resort if needed (client_lastupdate)
 if ($sort == 'client_lastupdate') {
