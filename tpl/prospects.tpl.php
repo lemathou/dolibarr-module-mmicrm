@@ -1,23 +1,30 @@
 <style type="text/css">
-	.num {
-		text-align: right;
+	/* Les deux familles de colonnes restent repérables d'un coup d'oeil, mais en
+	   teintes translucides : un fond opaque clair rendait le texte illisible dès
+	   que Dolibarr passait en thème sombre. */
+	#crm_list td.cmd {
+		background-color: rgba(214, 158, 46, 0.10);
 	}
-	td.cmd {
-		background-color: #ffc;
+	#crm_list td.rel {
+		background-color: rgba(159, 92, 190, 0.10);
 	}
-	td.rel {
-		background-color: #fcf;
-	}
-	.sort {
+	#crm_list .sort {
 		border: 1px solid transparent;
 		padding: 1px;
+		text-decoration: none;
 	}
-	.sort.active {
-		border-color: black;
+	#crm_list .sort.active {
+		border-color: currentColor;
+	}
+	#crm_list .a-user,
+	#crm_list .k-user,
+	#crm_list .k-contact {
+		opacity: 0.7;
+		font-size: 0.9em;
 	}
 
-	#crm_list input {
-		border: 1px dashed gray;
+	#filters input[type="text"],
+	#filters input:not([type]) {
 		width: 97%;
 		padding-right: 0;
 		margin-right: 0;
@@ -30,7 +37,6 @@ $sql = 'SELECT rowid AS `value`, label
 	FROM `'.MAIN_DB_PREFIX.'c_societe_p_group`
 	WHERE `active` = 1
 	ORDER BY `pos`';
-//echo $sql;
 $q = $db->query($sql);
 while($row = $q->fetch_array()) {
 	$p_group_list[$row['value']] = $row;
@@ -53,16 +59,29 @@ function user_filter_select($name, $value)
 
 function date_fromsql($date)
 {
+	if (empty($date))
+		return '';
 	$e = explode('-', substr($date, 0, 10));
 	$e = array_reverse($e);
 
 	return implode('/', $e);
 }
 
+/** Échappement HTML d'une valeur pouvant être nulle (sortie de requête). */
+function h($value)
+{
+	return dol_escape_htmltag((string) ($value ?? ''));
+}
+
+/** Initiales d'un utilisateur (prénom + nom), tolérantes aux valeurs nulles. */
+function initials($firstname, $lastname)
+{
+	return dol_escape_htmltag(mb_substr((string) ($firstname ?? ''), 0, 1).mb_substr((string) ($lastname ?? ''), 0, 1));
+}
+
 function col_sort_aff($sort_name)
 {
 	global $sort_list, $filters_url, $sort, $sort_order;
-	//var_dump($sort_list, $filters_url, $sort, $sort_order);
 
 	$sort_name_order = ($sort==$sort_name ?($sort_order=='DESC' ?'DESC' :'ASC') :(!empty($sort_list[$sort_name]['sql_order']) ?$sort_list[$sort_name]['sql_order'] :'ASC'));
 
@@ -77,7 +96,7 @@ function col_filter_aff($filter_name)
 		return '';
 
 	if (in_array($filter_list[$filter_name]['type'], ['string', 'int'])) {
-		return '<input name="filters['.$filter_name.']" value="'.(!empty($filters[$filter_name]) ?$filters[$filter_name] :'').'" />';
+		return '<input name="filters['.$filter_name.']" value="'.(!empty($filters[$filter_name]) ?h($filters[$filter_name]) :'').'" />';
 	}
 	elseif ($filter_list[$filter_name]['type'] == 'userselect') {
 		return user_filter_select($filter_name, $filters[$filter_name] ?? '');
@@ -85,7 +104,7 @@ function col_filter_aff($filter_name)
 	elseif ($filter_list[$filter_name]['type'] == 'radio') {
 		$ret = '<select name="filters['.$filter_name.']" onchange="this.form.submit()"><option value="">--</option>';
 		foreach($filter_list[$filter_name]['list'] as $name=>$option)
-			$ret .= '<option value="'.$name.'"'.(!empty($filters[$filter_name]) && $filters[$filter_name]==$name ?' selected' :'').'>'.$option['label'].'</option>';
+			$ret .= '<option value="'.h($name).'"'.(!empty($filters[$filter_name]) && $filters[$filter_name]==$name ?' selected' :'').'>'.h($option['label']).'</option>';
 		$ret .= '</select>';
 		return $ret;
 	}
@@ -96,7 +115,7 @@ function col_filter_aff($filter_name)
 	elseif ($filter_list[$filter_name]['type'] == 'select') {
 		$ret = '<select name="filters['.$filter_name.']" onchange="this.form.submit()"><option value="">--</option>';
 		foreach($filter_list[$filter_name]['list'] as $name=>$option)
-			$ret .= '<option value="'.$name.'"'.(!empty($filters[$filter_name]) && $filters[$filter_name]==$name ?' selected' :'').'>'.$option['label'].'</option>';
+			$ret .= '<option value="'.h($name).'"'.(!empty($filters[$filter_name]) && $filters[$filter_name]==$name ?' selected' :'').'>'.h($option['label']).'</option>';
 		$ret .= '</select>';
 		return $ret;
 	}
@@ -106,6 +125,7 @@ $sql_begin = 0;
 $sql_limit = 1000;
 
 $sql_order = '';
+$sql_sort = '';
 $sql_join = [];
 $sql_where = [];
 $sql_having = [];
@@ -118,7 +138,7 @@ echo ' | <a href="?filters[cmd_nb_min]=1&filters[cmd_nb_max]=1">Une seule comman
 echo ' | <a href="?filters[prospect]=prospect&filters[relance_max]=1">Prospect une seule relance</a>';
 echo '</p>';
 echo '<p><a href="javascript:;" onclick="$(\'#filters\').toggle()">Afficher/Cacher les filtres supplémentaires</a></p>';
-echo '<table id="filters" border="1" style="display:none;">';
+echo '<table id="filters" class="border centpercent" style="display:none;">';
 
 echo '<thead>';
 echo '<tr>';
@@ -279,11 +299,9 @@ foreach($filter_list as $i=>$j) {
 					}
 				}
 				if (!empty($j['sql_where']))
-					$sql_where[] = str_replace('%value', $j2['value'], $j['sql_where']);
+					$sql_where[] = str_replace('%value', (int) $j2['value'], $j['sql_where']);
 				if (!empty($j2['sql_where']))
 					$sql_where[] = $j2['sql_where'];
-				if (!empty($j2['sql_having']))
-					$sql_having[] = $j2['sql_having'];
 				if (!empty($j2['sql_having']))
 					$sql_having[] = $j2['sql_having'];
 			}
@@ -291,7 +309,7 @@ foreach($filter_list as $i=>$j) {
 				$checked = '';
 			}
 
-			echo '<option value="'.$i2.'"'.$checked.'>'.$j2['label'].'</option>';
+			echo '<option value="'.h($i2).'"'.$checked.'>'.h($j2['label']).'</option>';
 		}
 		echo '</select>';
 	}
@@ -326,7 +344,7 @@ foreach($filter_list as $i=>$j) {
 	}
 	elseif ($j['type']=='int') {
 		if (isset($filters[$i]) && is_numeric($filters[$i])) {
-			$value = $filters[$i];
+			$value = 0 + $filters[$i];
 			if (!empty($j['sql_join'])) {
 				if (is_string($j['sql_join'])) {
 					$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
@@ -348,11 +366,13 @@ foreach($filter_list as $i=>$j) {
 		}
 		
 		if (empty($j['col_only']))
-			echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.$value.'" size="5" /><br />';
+			echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.h($value).'" size="5" /><br />';
 	}
 	elseif ($j['type']=='string') {
 		if (isset($filters[$i]) && !empty($filters[$i])) {
-			$value = $filters[$i];
+			// $value part dans un LIKE construit par concaténation : à échapper avant
+			// toute chose (elle vient de GETPOST).
+			$value = $db->escape($filters[$i]);
 			if (!empty($j['sql_join'])) {
 				if (is_string($j['sql_join'])) {
 					$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
@@ -375,7 +395,7 @@ foreach($filter_list as $i=>$j) {
 
 
 		if (empty($j['col_only']))
-			echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.$value.'" size="5" /><br />';
+			echo '<label for="filter_'.$i.'">'.$j['label'].'</label>: <input id="filter_'.$i.'" type="text" name="filters['.$i.']" value="'.h($filters[$i] ?? '').'" size="5" /><br />';
 	}
 	elseif ($j['type']=='checkbox' || $j['type']=='bool') {
 		if (isset($filters[$i]) && $filters[$i]!='') {
@@ -524,9 +544,7 @@ $sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_
 	'.($sql_sort  ?'ORDER BY '.$sql_sort :'').'
 	LIMIT '.$sql_begin.', '.$sql_limit.'
 ';
-//echo '<pre>'.$sql.'</pre>';
 $q = $db->query($sql);
-//var_dump($q);
 echo '<p>'.$q->num_rows.' enregistrements</p>';
 while($row = $q->fetch_assoc()) {
 	$l[$row['rowid']] = $row;
@@ -534,7 +552,6 @@ while($row = $q->fetch_assoc()) {
 }
 
 if (! empty($l_s)) {
-	//var_dump($l);
 
 	$l_c = [];
 	// Commandes
@@ -544,9 +561,7 @@ if (! empty($l_s)) {
 		FROM '.MAIN_DB_PREFIX.'commande c
 		WHERE c.fk_soc IN ('.implode(', ', $l_s).')
 		GROUP BY c.fk_soc';
-	//echo $sql;
 	$q = $db->query($sql);
-	//var_dump($q);
 
 	while($row = $q->fetch_assoc()) {
 		$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
@@ -560,9 +575,7 @@ if (! empty($l_s)) {
 		FROM '.MAIN_DB_PREFIX.'commande c
 		WHERE c.rowid IN ('.implode(', ', $l_c).')
 		GROUP BY c.fk_soc';
-		//echo $sql;
 		$q = $db->query($sql);
-		//var_dump($q);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
 		}
@@ -631,9 +644,7 @@ if (! empty($l_s)) {
 			WHERE k.fk_soc IN ('.implode(', ', $l_s).')
 			GROUP BY k.fk_soc
 		';
-		//echo $sql;
 		$q = $db->query($sql);
-		//var_dump($q);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
 			$l_k[] = $row['k_last_rowid'];
@@ -641,7 +652,6 @@ if (! empty($l_s)) {
 				FROM '.MAIN_DB_PREFIX.'contacttracking k
 				LEFT JOIN '.MAIN_DB_PREFIX.'user AS u ON u.rowid=k.fk_user_creat
 				WHERE k.rowid = '.$row['k_last_rowid'];
-			//echo $sql;
 			$q2 = $db->query($sql);
 			$row2 = $q2->fetch_assoc();
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row2);
@@ -656,7 +666,6 @@ if (! empty($l_s)) {
 			INNER JOIN '.MAIN_DB_PREFIX.'user u ON u.rowid = sc.fk_user
 			WHERE sc.fk_soc IN ('.implode(', ', $l_s).')
 			GROUP BY sc.fk_soc';
-		//echo $sql;
 		$q = $db->query($sql);
 		while($row = $q->fetch_assoc()) {
 			$l[$row['rowid']] = array_merge($l[$row['rowid']], $row);
@@ -702,17 +711,18 @@ if ($sort == 'client_lastupdate') {
 }
 
 foreach($filters as $i=>$j) {
-	$filters_url .= '&filters['.$i.']='.$j;
+	if (is_array($j))
+		continue;
+	$filters_url .= '&filters['.rawurlencode($i).']='.rawurlencode($j);
 }
 foreach($cols as $i=>$j) {
-	$filters_url .= '&cols['.$i.']='.$j;
+	$filters_url .= '&cols['.rawurlencode($i).']='.rawurlencode($j);
 }
-//var_dump($filters_url); die();
 
 //$filters_url .= '&sort='.$sort.'&sort_order='.$sort_order;
 
-echo '<table id="crm_list" border="1" cellpadding="2">';
-echo '<tr>';
+echo '<table id="crm_list" class="noborder centpercent">';
+echo '<tr class="liste_titre">';
 echo '<th rowspan="2">'.col_sort_aff('nom').'</th>';
 //echo '<th rowspan="2">Nom alternatif</th>';
 echo '<th rowspan="2">Groupe</th>';
@@ -728,7 +738,7 @@ echo '<th colspan="2">Dernière commande</th>';
 echo '<th colspan="4">Relances</th>';
 echo '</tr>';
 
-echo '<tr>';
+echo '<tr class="liste_titre">';
 echo '<th>'.col_sort_aff('client_lastupdate').'</th>';
 echo '<th>'.col_sort_aff('commandes_nb').'</th>';
 if (in_array('cmd_tot_mt', $cols))
@@ -741,7 +751,7 @@ echo '<th>'.col_sort_aff('evenement_last').'</th>';
 echo '<th>'.col_sort_aff('relance_next').'</th>';
 echo '</tr>';
 
-echo '<tr>';
+echo '<tr class="liste_titre">';
 echo '<th>'.col_filter_aff('client_nom').'</th>';
 echo '<th>'.col_filter_aff('groupe_client_pro').'<br />'.col_filter_aff('groupe_client').'</th>';
 if (in_array('ville', $cols))
@@ -764,29 +774,41 @@ echo '</tr>';
 
 
 foreach($l as $row) {
-	echo '<tr>';
-	echo '<td><a href="/comm/card.php?socid='.$row['rowid'].'">'.$row['nom'].'</a>'.(!empty($row['name_alias']) ?' ('.$row['name_alias'].')' :'').'</td>';
-	echo '<td>'.(!empty($row['p_group']) ?$p_groups[$row['p_group']]['label'] :'').'</td>';
+	echo '<tr class="oddeven">';
+	echo '<td><a href="/comm/card.php?socid='.((int) $row['rowid']).'">'.h($row['nom']).'</a>'.(!empty($row['name_alias']) ?' ('.h($row['name_alias']).')' :'').'</td>';
+	echo '<td>'.(!empty($row['p_group']) ?h($p_groups[$row['p_group']]['label'] ?? '') :'').'</td>';
 	if (in_array('ville', $cols))
-		echo '<td>'.$row['town'].'</td>';
+		echo '<td>'.h($row['town']).'</td>';
 	if (in_array('commercial', $cols))
-		echo '<td>'.dol_escape_htmltag($row['commercial'] ?? '').'</td>';
+		echo '<td>'.h($row['commercial'] ?? '').'</td>';
 	if (in_array('code_client', $cols))
-		echo '<td>'.dol_escape_htmltag($row['code_client'] ?? '').'</td>';
-	echo '<td class="center">'.date_fromsql(max($row['udates'])).'</td>';
-	echo '<td class="cmd num">'.$row['tot_nb'].'</td>';
+		echo '<td>'.h($row['code_client'] ?? '').'</td>';
+	echo '<td class="center nowraponall">'.date_fromsql($row['udate']).'</td>';
+	echo '<td class="cmd right">'.((int) ($row['tot_nb'] ?? 0)).'</td>';
 	if (in_array('cmd_tot_mt', $cols))
-		echo '<td class="cmd num">'.($row['tot_mt'] ?$row['tot_mt'].'&nbsp;&euro;' :'').'</td>';
-	echo '<td class="cmd"><a href="/commande/card.php?id='.$row['last_rowid'].'">'.date_fromsql($row['c_last_date']).'</a></td>';
-	echo '<td class="cmd num">'.($row['last_mt'] ?$row['last_mt'].'&nbsp;&euro;' :'').'</td>';
-	echo '<td class="rel num">'.$row['k_nb'].'</td>';
-	echo '<td class="rel num">'.(!empty($row['k_last_rowid']) ?'<span class="k-user" title="'.$row['k_last_user_firstname'].' '.$row['k_last_user_lastname'].'">'.substr($row['k_last_user_firstname'], 0, 1).substr($row['k_last_user_lastname'], 0, 1).'</span> <span class="k-contact" title="'.$row['k_last_contact_type'].'">'.substr($row['k_last_contact_type'], 0, 4).'</span> <a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a>' :'').'</td>';
-	// Dernier événement RÉALISÉ (agenda natif) — RM2779. Distinct de la dernière
-	// relance, qui ne remonte que du module optionnel contacttracking.
-	echo '<td class="rel num">'.(!empty($row['a_past_last_rowid']) ?'<span class="a-user" title="'.$row['a_past_last_user_firstname'].' '.$row['a_past_last_user_lastname'].'">'.substr($row['a_past_last_user_firstname'], 0, 1).substr($row['a_past_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_past_last_rowid'].'" title="'.$row['a_past_last_type'].' — '.$row['a_past_last_label'].'">'.date_fromsql($row['a_past_last_date']).'</a>' :'').'</td>';
-	echo '<td class="rel num">'.(!empty($row['a_last_rowid']) ?'<span class="a-user" title="'.$row['a_last_user_firstname'].' '.$row['a_last_user_lastname'].'">'.substr($row['a_last_user_firstname'], 0, 1).substr($row['a_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a>' :'').'</td>';
-	echo '<td class="num"><a href="/custom/contacttracking/contacttracking_list.php?socid='.$row['rowid'].'&element_type=thirdparty">Histo</a> | <a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.$row['rowid'].'&mode=show_month&">Evé</a></td>';
-	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
+		echo '<td class="cmd right nowraponall">'.(!empty($row['tot_mt']) ?price($row['tot_mt'], 0, $langs, 1, -1, -1, 'auto') :'').'</td>';
+	echo '<td class="cmd nowraponall">'.(!empty($row['last_rowid']) ?'<a href="/commande/card.php?id='.((int) $row['last_rowid']).'">'.date_fromsql($row['c_last_date']).'</a>' :'').'</td>';
+	echo '<td class="cmd right nowraponall">'.(!empty($row['last_mt']) ?price($row['last_mt'], 0, $langs, 1, -1, -1, 'auto') :'').'</td>';
+
+	// Bloc Relances : nombre | dernière relance (contacttracking) |
+	// dernier événement réalisé (agenda, RM2779) | prochaine relance (agenda).
+	echo '<td class="rel right">'.((int) ($row['k_nb'] ?? 0)).'</td>';
+	echo '<td class="rel right nowraponall">'.(!empty($row['k_last_rowid'])
+		?'<span class="k-user" title="'.h(trim($row['k_last_user_firstname'].' '.$row['k_last_user_lastname'])).'">'.initials($row['k_last_user_firstname'] ?? '', $row['k_last_user_lastname'] ?? '').'</span>'
+			.' <span class="k-contact" title="'.h($row['k_last_contact_type']).'">'.h(mb_substr((string) ($row['k_last_contact_type'] ?? ''), 0, 4)).'</span>'
+			.' <a href="/custom/contacttracking/contacttracking_card.php?id='.((int) $row['k_last_rowid']).'">'.date_fromsql($row['k_last_date']).'</a>'
+		:'').'</td>';
+	echo '<td class="rel right nowraponall">'.(!empty($row['a_past_last_rowid'])
+		?'<span class="a-user" title="'.h(trim($row['a_past_last_user_firstname'].' '.$row['a_past_last_user_lastname'])).'">'.initials($row['a_past_last_user_firstname'] ?? '', $row['a_past_last_user_lastname'] ?? '').'</span>'
+			.' <a href="/comm/action/card.php?id='.((int) $row['a_past_last_rowid']).'" title="'.h(trim(($row['a_past_last_type'] ?? '').' — '.($row['a_past_last_label'] ?? ''), ' —')).'">'.date_fromsql($row['a_past_last_date']).'</a>'
+		:'').'</td>';
+	echo '<td class="rel right nowraponall">'.(!empty($row['a_last_rowid'])
+		?'<span class="a-user" title="'.h(trim($row['a_last_user_firstname'].' '.$row['a_last_user_lastname'])).'">'.initials($row['a_last_user_firstname'] ?? '', $row['a_last_user_lastname'] ?? '').'</span>'
+			.' <a href="/comm/action/card.php?id='.((int) $row['a_last_rowid']).'">'.date_fromsql($row['a_last_date']).'</a>'
+		:'').'</td>';
+
+	echo '<td class="right nowraponall"><a href="/custom/contacttracking/contacttracking_list.php?socid='.((int) $row['rowid']).'&element_type=thirdparty">Histo</a> | <a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.((int) $row['rowid']).'&mode=show_month&">Evé</a></td>';
+	echo '<td class="right nowraponall"><a href="/comm/action/card.php?action=create&originid='.((int) $row['rowid']).'&socid='.((int) $row['rowid']).'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
 	echo '</tr>';
 }
 echo '</table>';
