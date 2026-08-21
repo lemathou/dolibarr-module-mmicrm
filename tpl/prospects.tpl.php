@@ -135,6 +135,9 @@ $join_list = [
 	'c' => 'LEFT JOIN '.MAIN_DB_PREFIX.'commande c ON c.fk_soc=s.rowid',
 	'k' => 'LEFT JOIN '.MAIN_DB_PREFIX.'contacttracking k ON k.fk_soc=s.rowid',
 	'a' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a ON a.fk_soc=s.rowid AND a.datep > NOW()',
+	// 'a' ne voit que les événements à venir : le tri sur les événements réalisés
+	// a besoin de son propre join (RM2779).
+	'a2' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a2 ON a2.fk_soc=s.rowid AND a2.datep <= NOW()',
 ];
 $filter_list = [
 	'prospect' => [
@@ -446,11 +449,18 @@ $sort_list = [
 		'sql_join' => 'k',
 		'sql_sort' => 'MAX(k.date_creation)',
 	],
+	'evenement_last' => [
+		'label' => 'Dernier événement réalisé',
+		'label_short' => 'Dern. évé.',
+		'sql_join' => 'a2',
+		'sql_sort' => 'MAX(a2.datep)',
+		'sql_order' => 'DESC',
+	],
 	'relance_next' => [
 		'label' => 'Prochaine relance',
 		'label_short' => 'Prochaine',
 		'sql_join' => 'a',
-		'sql_sort' => 'MAX(a.datep)',
+		'sql_sort' => 'MIN(a.datep)',
 	],
 	'commandes_nb' => [
 		'label' => 'Nb commandes',
@@ -715,7 +725,7 @@ if (in_array('code_client', $cols))
 echo '<th width="100">Dernière Action/Modif</th>';
 echo '<th width="100" colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
-echo '<th colspan="3">Relances</th>';
+echo '<th colspan="4">Relances</th>';
 echo '</tr>';
 
 echo '<tr>';
@@ -727,6 +737,7 @@ echo '<th>'.col_sort_aff('commande_last').'</th>';
 echo '<th>Montant</th>';
 echo '<th>Nombre</th>';
 echo '<th>'.col_sort_aff('relance_last').'</th>';
+echo '<th>'.col_sort_aff('evenement_last').'</th>';
 echo '<th>'.col_sort_aff('relance_next').'</th>';
 echo '</tr>';
 
@@ -747,6 +758,7 @@ echo '<th>'.col_filter_aff('commande_last').'</th>';
 echo '<th>'.col_filter_aff('mt').'</th>';
 echo '<th>'.col_filter_aff('nb').'</th>';
 echo '<th>'.col_filter_aff('relance_not_before_cmd').'<br />'.col_filter_aff('relance_histo_user').'</th>';
+echo '<th></th>';
 echo '<th>'.col_filter_aff('relance_next').'</th>';
 echo '</tr>';
 
@@ -769,6 +781,9 @@ foreach($l as $row) {
 	echo '<td class="cmd num">'.($row['last_mt'] ?$row['last_mt'].'&nbsp;&euro;' :'').'</td>';
 	echo '<td class="rel num">'.$row['k_nb'].'</td>';
 	echo '<td class="rel num">'.(!empty($row['k_last_rowid']) ?'<span class="k-user" title="'.$row['k_last_user_firstname'].' '.$row['k_last_user_lastname'].'">'.substr($row['k_last_user_firstname'], 0, 1).substr($row['k_last_user_lastname'], 0, 1).'</span> <span class="k-contact" title="'.$row['k_last_contact_type'].'">'.substr($row['k_last_contact_type'], 0, 4).'</span> <a href="/custom/contacttracking/contacttracking_card.php?id='.$row['k_last_rowid'].'">'.date_fromsql($row['k_last_date']).'</a>' :'').'</td>';
+	// Dernier événement RÉALISÉ (agenda natif) — RM2779. Distinct de la dernière
+	// relance, qui ne remonte que du module optionnel contacttracking.
+	echo '<td class="rel num">'.(!empty($row['a_past_last_rowid']) ?'<span class="a-user" title="'.$row['a_past_last_user_firstname'].' '.$row['a_past_last_user_lastname'].'">'.substr($row['a_past_last_user_firstname'], 0, 1).substr($row['a_past_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_past_last_rowid'].'" title="'.$row['a_past_last_type'].' — '.$row['a_past_last_label'].'">'.date_fromsql($row['a_past_last_date']).'</a>' :'').'</td>';
 	echo '<td class="rel num">'.(!empty($row['a_last_rowid']) ?'<span class="a-user" title="'.$row['a_last_user_firstname'].' '.$row['a_last_user_lastname'].'">'.substr($row['a_last_user_firstname'], 0, 1).substr($row['a_last_user_lastname'], 0, 1).'</span> <a href="/comm/action/card.php?id='.$row['a_last_rowid'].'">'.date_fromsql($row['a_last_date']).'</a>' :'').'</td>';
 	echo '<td class="num"><a href="/custom/contacttracking/contacttracking_list.php?socid='.$row['rowid'].'&element_type=thirdparty">Histo</a> | <a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.$row['rowid'].'&mode=show_month&">Evé</a></td>';
 	echo '<td class="num"><a href="/comm/action/card.php?action=create&originid='.$row['rowid'].'&socid='.$row['rowid'].'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
