@@ -121,6 +121,53 @@ function col_filter_aff($filter_name)
 	}
 }
 
+/**
+ * Prédicat SQL « cet événement est un contact client » (RM2779).
+ *
+ * L'agenda est massivement alimenté par des événements automatiques : sur ce parc,
+ * 97,8 % des actioncomm passés sont des AC_OTH_AUTO, dont l'essentiel n'est que de
+ * la traçabilité (« Tiers X modifié », « Commande COxxxx validée »). Les afficher
+ * bruts noierait la colonne. On ne retient donc que les contacts réels : les codes
+ * de contact d'un côté, et de l'autre les mails partis automatiquement, qui sont
+ * bien un contact même s'ils sont générés (« E-mail envoyé par Calicote à … »).
+ *
+ * Les deux réglages sont des constantes, pour pouvoir ajuster le tri à l'usage sans
+ * repasser par une MEP :
+ *   MMICRM_PROSPECTS_EVENT_CODES    codes retenus, séparés par des virgules
+ *   MMICRM_PROSPECTS_EVENT_AUTOMAIL motif LIKE rattrapant les mails automatiques
+ *                                   (vide = ne rien rattraper)
+ *
+ * @param string $a  alias de la table actioncomm
+ * @param string $ca alias de la table c_actioncomm jointe dessus
+ * @return string    prédicat SQL, toujours entre parenthèses
+ */
+function mmicrm_event_is_contact_sql($a, $ca)
+{
+	global $db;
+
+	$codes = getDolGlobalString('MMICRM_PROSPECTS_EVENT_CODES');
+	if ($codes === '')
+		$codes = 'AC_TEL,AC_RDV,AC_EMAIL,AC_EMAIL_IN,AC_FAX,AC_SMS,AC_SMS_IN,AC_INT,AC_OTH';
+	$in = [];
+	foreach (explode(',', $codes) as $code) {
+		$code = trim($code);
+		if ($code !== '')
+			$in[] = '"'.$db->escape($code).'"';
+	}
+
+	$conds = [];
+	if (!empty($in))
+		$conds[] = $ca.'.code IN ('.implode(', ', $in).')';
+
+	$automail = getDolGlobalString('MMICRM_PROSPECTS_EVENT_AUTOMAIL');
+	if ($automail === '')
+		$automail = '%mail envoy%';
+	if ($automail !== '-')
+		$conds[] = '('.$ca.'.code = "AC_OTH_AUTO" AND '.$a.'.label LIKE "'.$db->escape($automail).'")';
+
+	return empty($conds) ? '(1=1)' : '('.implode(' OR ', $conds).')';
+}
+
 $sql_begin = 0;
 $sql_limit = 1000;
 
@@ -156,8 +203,14 @@ $join_list = [
 	'k' => 'LEFT JOIN '.MAIN_DB_PREFIX.'contacttracking k ON k.fk_soc=s.rowid',
 	'a' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a ON a.fk_soc=s.rowid AND a.datep > NOW()',
 	// 'a' ne voit que les événements à venir : le tri sur les événements réalisés
-	// a besoin de son propre join (RM2779).
-	'a2' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a2 ON a2.fk_soc=s.rowid AND a2.datep <= NOW()',
+	// a besoin de son propre join (RM2779), filtré comme la colonne qu'il trie.
+	// Table dérivée plutôt que deux LEFT JOIN en cascade : le filtre a besoin de
+	// c_actioncomm, qui ne peut pas être joint avant actioncomm dans un ON.
+	'a2' => 'LEFT JOIN (SELECT a2i.fk_soc, MAX(a2i.datep) AS datep'
+		.' FROM '.MAIN_DB_PREFIX.'actioncomm a2i'
+		.' LEFT JOIN '.MAIN_DB_PREFIX.'c_actioncomm ca2i ON ca2i.id=a2i.fk_action'
+		.' WHERE a2i.datep <= NOW() AND '.mmicrm_event_is_contact_sql('a2i', 'ca2i')
+		.' GROUP BY a2i.fk_soc) a2 ON a2.fk_soc=s.rowid',
 ];
 $filter_list = [
 	'prospect' => [
@@ -616,7 +669,9 @@ if (! empty($l_s)) {
 		$sql = 'SELECT a.fk_soc AS rowid, COUNT(DISTINCT a.id) AS a_past_nb, MAX(a.datep) AS a_past_last_date,
 				SUBSTRING_INDEX(GROUP_CONCAT(a.id ORDER BY a.datep DESC, a.id DESC), \',\', 1) AS a_past_last_rowid
 			FROM '.MAIN_DB_PREFIX.'actioncomm a
+			LEFT JOIN '.MAIN_DB_PREFIX.'c_actioncomm ca ON ca.id=a.fk_action
 			WHERE a.fk_soc IN ('.implode(', ', $l_s).') AND a.datep <= NOW()
+				AND '.mmicrm_event_is_contact_sql('a', 'ca').'
 			GROUP BY a.fk_soc';
 		$q = $db->query($sql);
 		while($row = $q->fetch_assoc()) {
