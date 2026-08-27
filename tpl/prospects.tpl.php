@@ -1,4 +1,11 @@
 <style type="text/css">
+	/* Commerciaux désactivés : ils restent sélectionnables (retrouver le
+	   portefeuille d'un partant) mais passent au second plan. Le tri les place
+	   déjà en fin de liste. */
+	.crmuserfilter option.crmuser-inactive {
+		color: #999;
+		font-style: italic;
+	}
 	/* Les deux familles de colonnes restent repérables d'un coup d'oeil, mais en
 	   teintes translucides : un fond opaque clair rendait le texte illisible dès
 	   que Dolibarr passait en thème sombre. */
@@ -52,9 +59,35 @@ $form = new Form($db);
  */
 function user_filter_select($name, $value)
 {
-	global $form;
+	global $db;
 	$selected = (isset($value) && $value !== '' && (int) $value > 0) ? (int) $value : '';
-	return $form->select_dolusers($selected, 'filters['.$name.']', 1, null, 0, '', '', 0, 0, 0, '', 0, '', 'crmuserfilter maxwidth200', 0, 0, false, 1);
+
+	// Combo construit ici plutôt que par Form::select_dolusers() : le natif trie
+	// déjà les actifs d'abord (ORDER BY u.statut DESC) mais ne sait pas GRISER les
+	// comptes désactivés — il se contente d'accoler « (Désactivé) » au libellé,
+	// texte traduit sur lequel on ne peut pas accrocher un style de façon fiable.
+	// Le filtre d'entité reproduit celui du natif (RM2856).
+	$sql = 'SELECT u.rowid, u.lastname, u.firstname, u.statut'
+		.' FROM '.MAIN_DB_PREFIX.'user u'
+		.' WHERE u.entity IN ('.getEntity('user').')'
+		.' ORDER BY u.statut DESC, u.firstname ASC, u.lastname ASC';
+	$q = $db->query($sql);
+	$out = '<select name="filters['.$name.']" class="crmuserfilter maxwidth200">';
+	$out .= '<option value="">&nbsp;</option>';
+	if ($q) {
+		while ($u = $q->fetch_assoc()) {
+			$label = trim($u['firstname'].' '.$u['lastname']);
+			if ($label === '')
+				$label = '#'.$u['rowid'];
+			$inactive = ((int) $u['statut'] === 0);
+			$out .= '<option value="'.((int) $u['rowid']).'"'
+				.($inactive ? ' class="crmuser-inactive"' : '')
+				.($selected === (int) $u['rowid'] ? ' selected' : '').'>'
+				.h($label).($inactive ? ' (inactif)' : '').'</option>';
+		}
+	}
+	$out .= '</select>';
+	return $out;
 }
 
 function date_fromsql($date)
@@ -201,6 +234,12 @@ echo '<tr>';
 $join_list = [
 	'c' => 'LEFT JOIN '.MAIN_DB_PREFIX.'commande c ON c.fk_soc=s.rowid',
 	'k' => 'LEFT JOIN '.MAIN_DB_PREFIX.'contacttracking k ON k.fk_soc=s.rowid',
+	// Dernière commande par tiers, en table dérivée : sert au TRI des colonnes
+	// « dernière relance » et « dernier événement », qui masquent leur valeur
+	// quand elle précède la dernière commande (RM2856). Un LEFT JOIN direct sur
+	// commande multiplierait les lignes et fausserait les COUNT du même SELECT.
+	'cmax' => 'LEFT JOIN (SELECT cmi.fk_soc, MAX(cmi.date_commande) AS dc'
+		.' FROM '.MAIN_DB_PREFIX.'commande cmi GROUP BY cmi.fk_soc) cmax ON cmax.fk_soc=s.rowid',
 	'a' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a ON a.fk_soc=s.rowid AND a.datep > NOW()',
 	// 'a' ne voit que les événements à venir : le tri sur les événements réalisés
 	// a besoin de son propre join (RM2779), filtré comme la colonne qu'il trie.
@@ -516,17 +555,22 @@ $sort_list = [
 		'label_short' => 'Nom',
 		'sql_sort' => 's.nom',
 	],
+	// Les deux colonnes suivantes masquent leur valeur quand elle précède la
+	// dernière commande (RM2856) : le tri doit voir la MÊME chose que l'affichage,
+	// sinon une ligne vide se retrouve triée sur une date invisible.
 	'relance_last' => [
 		'label' => 'Dernière relance',
 		'label_short' => 'Dernière',
 		'sql_join' => 'k',
-		'sql_sort' => 'MAX(k.date_creation)',
+		'sql_join_extra' => ['cmax'],
+		'sql_sort' => 'CASE WHEN cmax.dc IS NULL OR MAX(k.date_creation) > cmax.dc THEN MAX(k.date_creation) END',
 	],
 	'evenement_last' => [
 		'label' => 'Dernier événement réalisé',
 		'label_short' => 'Dern. évé.',
 		'sql_join' => 'a2',
-		'sql_sort' => 'MAX(a2.datep)',
+		'sql_join_extra' => ['cmax'],
+		'sql_sort' => 'CASE WHEN cmax.dc IS NULL OR MAX(a2.datep) > cmax.dc THEN MAX(a2.datep) END',
 		'sql_order' => 'DESC',
 	],
 	'relance_next' => [
@@ -562,6 +606,10 @@ foreach($sort_list as $i=>$j) {
 		$selected = ' selected';
 		if (!empty($j['sql_join']))
 			$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+		// Joins dont l'expression de tri a besoin en plus du sien (RM2856).
+		if (!empty($j['sql_join_extra']))
+			foreach ($j['sql_join_extra'] as $jx)
+				$sql_join[$jx] = $join_list[$jx];
 		if (! $sort_order && !empty($j['sql_order']))
 			$sort_order = $j['sql_order'];
 		$sql_sort = $j['sql_sort'].($sort_order ? ' '.$sort_order :'');
@@ -727,6 +775,23 @@ if (! empty($l_s)) {
 		}
 	}
 }
+
+// Une relance ou un événement ANTÉRIEUR à la dernière commande n'appelle plus
+// d'action : le client a commandé depuis, la relance a porté. On neutralise la
+// valeur ici plutôt qu'à l'echo, pour que tout ce qui suit (affichage compris)
+// voie la même chose que le tri SQL, qui applique la même règle (RM2856).
+// Sans effet sur « Dernière action/modif » : une date écartée ici est par
+// construction inférieure à c_last_date, qui reste dans le max ci-dessous.
+foreach ($l as &$row) {
+	$last_cmd = $row['c_last_date'] ?? null;
+	if (empty($last_cmd))
+		continue;
+	if (!empty($row['k_last_date']) && $row['k_last_date'] < $last_cmd)
+		$row['k_last_rowid'] = $row['k_last_date'] = null;
+	if (!empty($row['a_past_last_date']) && $row['a_past_last_date'] < $last_cmd)
+		$row['a_past_last_rowid'] = $row['a_past_last_date'] = null;
+}
+unset($row);
 
 // « Dernière action/modif » : uniquement des dates PASSÉES. a_last_date est la
 // prochaine relance (datep > NOW()) : l'inclure faisait afficher une date future
