@@ -322,6 +322,12 @@ $filter_list = [
 		'type' => 'userselect',
 		'sql_where' => '(SELECT COUNT(scf.rowid) FROM '.MAIN_DB_PREFIX.'societe_commerciaux scf WHERE scf.fk_soc = s.rowid AND scf.fk_user = %value LIMIT 1) > 0',
 	],
+	'catalogue_pro' => [
+		'label' => 'A un catalogue pro',
+		'type' => 'bool',
+		'sql_where' => 's2.p_catalogpro = 1',
+		'col_only' => true,
+	],
 ];
 
 $filters_url = '';
@@ -485,6 +491,7 @@ $cols_list = [
 	'commercial' => ['label'=>'Commercial'],
 	'cmd_tot_mt' => ['label'=>'Commandes : Montant total'],
 	'code_client' => ['label'=>'Code client'],
+	'catalogue_pro' => ['label'=>'Catalogue pro'],
 ];
 $cols = GETPOST('cols', 'array');
 if (GETPOST('cols_save', 'int')) {
@@ -586,7 +593,8 @@ while($row = $q->fetch_assoc()) {
 
 // Base
 $l = $l_s = [];
-$sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
+$sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_group,
+		s2.p_catalogpro, s2.p_catalogpro_url, s2.p_catalogpro_info
 	FROM '.MAIN_DB_PREFIX.'societe s
 	INNER JOIN '.MAIN_DB_PREFIX.'societe_extrafields s2 ON s2.fk_object=s.rowid
 	'.(!empty($sql_join) ?' '.implode(' ', $sql_join) :'').'
@@ -787,6 +795,8 @@ if (in_array('commercial', $cols))
 	echo '<th rowspan="2">Commercial</th>';
 if (in_array('code_client', $cols))
 	echo '<th rowspan="2">Code client</th>';
+if (in_array('catalogue_pro', $cols))
+	echo '<th rowspan="2">Catalogue pro</th>';
 echo '<th width="100">Dernière Action/Modif</th>';
 echo '<th width="100" colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
@@ -815,6 +825,8 @@ if (in_array('commercial', $cols))
 	echo '<th>'.col_filter_aff('commercial').'</th>';
 if (in_array('code_client', $cols))
 	echo '<th></th>';
+if (in_array('catalogue_pro', $cols))
+	echo '<th>'.col_filter_aff('catalogue_pro').'</th>';
 echo '<th>'.col_filter_aff('client_lastupdate').'</th>';
 echo '<th>'.col_filter_aff('prospect').'</th>';
 if (in_array('cmd_tot_mt', $cols))
@@ -838,6 +850,18 @@ foreach($l as $row) {
 		echo '<td>'.h($row['commercial'] ?? '').'</td>';
 	if (in_array('code_client', $cols))
 		echo '<td>'.h($row['code_client'] ?? '').'</td>';
+	if (in_array('catalogue_pro', $cols)) {
+		// 1 catalogue -> lien cliquable ; plusieurs -> message (pas d'URL, on ne
+		// choisit pas a la place de l'utilisateur) ; aucun -> case vide.
+		if (!empty($row['p_catalogpro_url']))
+			$cat = '<a href="'.h($row['p_catalogpro_url']).'" target="_blank" rel="noopener">'
+				.h($row['p_catalogpro_info'] ?: 'Catalogue').'</a>';
+		elseif (!empty($row['p_catalogpro']))
+			$cat = h($row['p_catalogpro_info'] ?? '');
+		else
+			$cat = '';
+		echo '<td>'.$cat.'</td>';
+	}
 	echo '<td class="center nowraponall">'.date_fromsql($row['udate']).'</td>';
 	echo '<td class="cmd right">'.((int) ($row['tot_nb'] ?? 0)).'</td>';
 	if (in_array('cmd_tot_mt', $cols))
