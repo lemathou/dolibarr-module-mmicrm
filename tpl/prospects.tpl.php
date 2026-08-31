@@ -1,4 +1,63 @@
 <style type="text/css">
+	/* Suivi commercial édité depuis la liste (RM2858). */
+	#crm_list td.crm-urgent-col, #crm_list th.crm-urgent-col {
+		width: 1.8em;
+		text-align: center;
+		padding: 0 2px;
+	}
+	#crm_list button.crm-urgent {
+		border: 1px solid transparent;
+		background: none;
+		cursor: pointer;
+		font-weight: bold;
+		line-height: 1.2;
+		width: 1.6em;
+		color: #bbb;
+		border-radius: 3px;
+	}
+	#crm_list button.crm-urgent.on {
+		color: #fff;
+		background-color: #c0392b;
+	}
+	#crm_list button.crm-urgent:hover {
+		border-color: #c0392b;
+	}
+	#crm_list button.crm-urgent.pending {
+		opacity: 0.4;
+		cursor: wait;
+	}
+	/* Textarea bas au repos, agrandi au focus : la liste est dense, une note à
+	   plusieurs lignes en permanence ferait exploser la hauteur des lignes. */
+	#crm_list textarea.crm-note {
+		width: 14em;
+		min-width: 100%;
+		height: 1.7em;
+		resize: vertical;
+		font-size: 0.9em;
+		padding: 2px 4px;
+		border: 1px solid transparent;
+		background: rgba(127, 127, 127, 0.07);
+		border-radius: 3px;
+	}
+	#crm_list textarea.crm-note:focus {
+		height: 5em;
+		border-color: #888;
+		background: rgba(127, 127, 127, 0.15);
+	}
+	#crm_list textarea.crm-note.saved {
+		border-color: #27ae60;
+	}
+	#crm_list textarea.crm-note.failed {
+		border-color: #c0392b;
+		background: rgba(192, 57, 43, 0.12);
+	}
+	/* Commerciaux désactivés : ils restent sélectionnables (retrouver le
+	   portefeuille d'un partant) mais passent au second plan. Le tri les place
+	   déjà en fin de liste. */
+	.crmuserfilter option.crmuser-inactive {
+		color: #999;
+		font-style: italic;
+	}
 	/* Les deux familles de colonnes restent repérables d'un coup d'oeil, mais en
 	   teintes translucides : un fond opaque clair rendait le texte illisible dès
 	   que Dolibarr passait en thème sombre. */
@@ -52,9 +111,35 @@ $form = new Form($db);
  */
 function user_filter_select($name, $value)
 {
-	global $form;
+	global $db;
 	$selected = (isset($value) && $value !== '' && (int) $value > 0) ? (int) $value : '';
-	return $form->select_dolusers($selected, 'filters['.$name.']', 1, null, 0, '', '', 0, 0, 0, '', 0, '', 'crmuserfilter maxwidth200', 0, 0, false, 1);
+
+	// Combo construit ici plutôt que par Form::select_dolusers() : le natif trie
+	// déjà les actifs d'abord (ORDER BY u.statut DESC) mais ne sait pas GRISER les
+	// comptes désactivés — il se contente d'accoler « (Désactivé) » au libellé,
+	// texte traduit sur lequel on ne peut pas accrocher un style de façon fiable.
+	// Le filtre d'entité reproduit celui du natif (RM2856).
+	$sql = 'SELECT u.rowid, u.lastname, u.firstname, u.statut'
+		.' FROM '.MAIN_DB_PREFIX.'user u'
+		.' WHERE u.entity IN ('.getEntity('user').')'
+		.' ORDER BY u.statut DESC, u.firstname ASC, u.lastname ASC';
+	$q = $db->query($sql);
+	$out = '<select name="filters['.$name.']" class="crmuserfilter maxwidth200">';
+	$out .= '<option value="">&nbsp;</option>';
+	if ($q) {
+		while ($u = $q->fetch_assoc()) {
+			$label = trim($u['firstname'].' '.$u['lastname']);
+			if ($label === '')
+				$label = '#'.$u['rowid'];
+			$inactive = ((int) $u['statut'] === 0);
+			$out .= '<option value="'.((int) $u['rowid']).'"'
+				.($inactive ? ' class="crmuser-inactive"' : '')
+				.($selected === (int) $u['rowid'] ? ' selected' : '').'>'
+				.h($label).($inactive ? ' (inactif)' : '').'</option>';
+		}
+	}
+	$out .= '</select>';
+	return $out;
 }
 
 function date_fromsql($date)
@@ -201,6 +286,12 @@ echo '<tr>';
 $join_list = [
 	'c' => 'LEFT JOIN '.MAIN_DB_PREFIX.'commande c ON c.fk_soc=s.rowid',
 	'k' => 'LEFT JOIN '.MAIN_DB_PREFIX.'contacttracking k ON k.fk_soc=s.rowid',
+	// Dernière commande par tiers, en table dérivée : sert au TRI des colonnes
+	// « dernière relance » et « dernier événement », qui masquent leur valeur
+	// quand elle précède la dernière commande (RM2856). Un LEFT JOIN direct sur
+	// commande multiplierait les lignes et fausserait les COUNT du même SELECT.
+	'cmax' => 'LEFT JOIN (SELECT cmi.fk_soc, MAX(cmi.date_commande) AS dc'
+		.' FROM '.MAIN_DB_PREFIX.'commande cmi GROUP BY cmi.fk_soc) cmax ON cmax.fk_soc=s.rowid',
 	'a' => 'LEFT JOIN '.MAIN_DB_PREFIX.'actioncomm a ON a.fk_soc=s.rowid AND a.datep > NOW()',
 	// 'a' ne voit que les événements à venir : le tri sur les événements réalisés
 	// a besoin de son propre join (RM2779), filtré comme la colonne qu'il trie.
@@ -246,6 +337,13 @@ $filter_list = [
 		'type' => 'int',
 		'sql_join' => 'c',
 		'sql_having' => 'COUNT(DISTINCT c.rowid) <= %value',
+	],
+	// Suivi commercial (RM2858) : societe_extrafields est déjà joint en INNER
+	// pour p_group, aucun join supplémentaire n'est nécessaire.
+	'crm_urgent' => [
+		'label' => 'À traiter en urgence',
+		'type' => 'checkbox',
+		'sql_where' => 's2.crm_urgent = 1',
 	],
 	'relance_histo' => [
 		'label' => 'Pas relancé depuis n mois',
@@ -485,7 +583,12 @@ $cols_list = [
 	'commercial' => ['label'=>'Commercial'],
 	'cmd_tot_mt' => ['label'=>'Commandes : Montant total'],
 	'code_client' => ['label'=>'Code client'],
+	'urgent' => ['label'=>'Urgence (RM2858)'],
+	'crm_note' => ['label'=>'Note de suivi (RM2858)'],
 ];
+// Colonnes montrées à qui n'a jamais enregistré de préférence : les deux nouvelles
+// le sont, sans quoi la fonctionnalité resterait invisible à l'arrivée sur la page.
+$cols_default = ['urgent', 'crm_note'];
 $cols = GETPOST('cols', 'array');
 if (GETPOST('cols_save', 'int')) {
 	// Soumission du formulaire de filtres -> on mémorise le choix (même vide)
@@ -496,6 +599,11 @@ if (GETPOST('cols_save', 'int')) {
 elseif (!GETPOSTISSET('cols') && !empty($user->conf->MMICRM_PROSPECTS_COLS)) {
 	// Pas de cols dans l'URL (arrivée sur la page, raccourci) -> préférence sauvegardée
 	$cols = explode(',', $user->conf->MMICRM_PROSPECTS_COLS);
+}
+elseif (!GETPOSTISSET('cols') && !isset($user->conf->MMICRM_PROSPECTS_COLS)) {
+	// Jamais de préférence enregistrée -> défaut. On distingue « pas de préférence »
+	// d'une préférence VIDE (l'utilisateur a tout décoché) : isset(), pas empty().
+	$cols = $cols_default;
 }
 echo '<td>Colonnes optionnelles :<br />';
 foreach($cols_list as $i=>$j) {
@@ -516,17 +624,22 @@ $sort_list = [
 		'label_short' => 'Nom',
 		'sql_sort' => 's.nom',
 	],
+	// Les deux colonnes suivantes masquent leur valeur quand elle précède la
+	// dernière commande (RM2856) : le tri doit voir la MÊME chose que l'affichage,
+	// sinon une ligne vide se retrouve triée sur une date invisible.
 	'relance_last' => [
 		'label' => 'Dernière relance',
 		'label_short' => 'Dernière',
 		'sql_join' => 'k',
-		'sql_sort' => 'MAX(k.date_creation)',
+		'sql_join_extra' => ['cmax'],
+		'sql_sort' => 'CASE WHEN cmax.dc IS NULL OR MAX(k.date_creation) > cmax.dc THEN MAX(k.date_creation) END',
 	],
 	'evenement_last' => [
 		'label' => 'Dernier événement réalisé',
 		'label_short' => 'Dern. évé.',
 		'sql_join' => 'a2',
-		'sql_sort' => 'MAX(a2.datep)',
+		'sql_join_extra' => ['cmax'],
+		'sql_sort' => 'CASE WHEN cmax.dc IS NULL OR MAX(a2.datep) > cmax.dc THEN MAX(a2.datep) END',
 		'sql_order' => 'DESC',
 	],
 	'relance_next' => [
@@ -562,6 +675,10 @@ foreach($sort_list as $i=>$j) {
 		$selected = ' selected';
 		if (!empty($j['sql_join']))
 			$sql_join[$j['sql_join']] = $join_list[$j['sql_join']];
+		// Joins dont l'expression de tri a besoin en plus du sien (RM2856).
+		if (!empty($j['sql_join_extra']))
+			foreach ($j['sql_join_extra'] as $jx)
+				$sql_join[$jx] = $join_list[$jx];
 		if (! $sort_order && !empty($j['sql_order']))
 			$sort_order = $j['sql_order'];
 		$sql_sort = $j['sql_sort'].($sort_order ? ' '.$sort_order :'');
@@ -586,7 +703,7 @@ while($row = $q->fetch_assoc()) {
 
 // Base
 $l = $l_s = [];
-$sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_group
+$sql = 'SELECT s.rowid, s.tms, s.nom, s.name_alias, s.code_client, s.town, s2.p_group, s2.crm_urgent, s2.crm_note
 	FROM '.MAIN_DB_PREFIX.'societe s
 	INNER JOIN '.MAIN_DB_PREFIX.'societe_extrafields s2 ON s2.fk_object=s.rowid
 	'.(!empty($sql_join) ?' '.implode(' ', $sql_join) :'').'
@@ -728,6 +845,23 @@ if (! empty($l_s)) {
 	}
 }
 
+// Une relance ou un événement ANTÉRIEUR à la dernière commande n'appelle plus
+// d'action : le client a commandé depuis, la relance a porté. On neutralise la
+// valeur ici plutôt qu'à l'echo, pour que tout ce qui suit (affichage compris)
+// voie la même chose que le tri SQL, qui applique la même règle (RM2856).
+// Sans effet sur « Dernière action/modif » : une date écartée ici est par
+// construction inférieure à c_last_date, qui reste dans le max ci-dessous.
+foreach ($l as &$row) {
+	$last_cmd = $row['c_last_date'] ?? null;
+	if (empty($last_cmd))
+		continue;
+	if (!empty($row['k_last_date']) && $row['k_last_date'] < $last_cmd)
+		$row['k_last_rowid'] = $row['k_last_date'] = null;
+	if (!empty($row['a_past_last_date']) && $row['a_past_last_date'] < $last_cmd)
+		$row['a_past_last_rowid'] = $row['a_past_last_date'] = null;
+}
+unset($row);
+
 // « Dernière action/modif » : uniquement des dates PASSÉES. a_last_date est la
 // prochaine relance (datep > NOW()) : l'inclure faisait afficher une date future
 // dans une colonne censée dire quand le tiers a bougé pour la dernière fois.
@@ -778,6 +912,8 @@ foreach($cols as $i=>$j) {
 
 echo '<table id="crm_list" class="noborder centpercent">';
 echo '<tr class="liste_titre">';
+if (in_array('urgent', $cols))
+	echo '<th rowspan="2" class="crm-urgent-col" title="À traiter en urgence">!</th>';
 echo '<th rowspan="2">'.col_sort_aff('nom').'</th>';
 //echo '<th rowspan="2">Nom alternatif</th>';
 echo '<th rowspan="2">Groupe</th>';
@@ -791,6 +927,8 @@ echo '<th width="100">Dernière Action/Modif</th>';
 echo '<th width="100" colspan="'.(in_array('cmd_tot_mt', $cols) ?'2' :'1').'">Total commandes</th>';
 echo '<th colspan="2">Dernière commande</th>';
 echo '<th colspan="4">Relances</th>';
+if (in_array('crm_note', $cols))
+	echo '<th rowspan="2">Note de suivi</th>';
 echo '</tr>';
 
 echo '<tr class="liste_titre">';
@@ -807,6 +945,8 @@ echo '<th>'.col_sort_aff('relance_next').'</th>';
 echo '</tr>';
 
 echo '<tr class="liste_titre">';
+if (in_array('urgent', $cols))
+	echo '<th>'.col_filter_aff('crm_urgent').'</th>';
 echo '<th>'.col_filter_aff('client_nom').'</th>';
 echo '<th>'.col_filter_aff('groupe_client_pro').'<br />'.col_filter_aff('groupe_client').'</th>';
 if (in_array('ville', $cols))
@@ -825,11 +965,20 @@ echo '<th>'.col_filter_aff('nb').'</th>';
 echo '<th>'.col_filter_aff('relance_not_before_cmd').'<br />'.col_filter_aff('relance_histo_user').'</th>';
 echo '<th></th>';
 echo '<th>'.col_filter_aff('relance_next').'</th>';
+if (in_array('crm_note', $cols))
+	echo '<th></th>';
 echo '</tr>';
 
 
 foreach($l as $row) {
 	echo '<tr class="oddeven">';
+	if (in_array('urgent', $cols)) {
+		$urgent = !empty($row['crm_urgent']);
+		echo '<td class="crm-urgent-col"><button type="button" class="crm-urgent'.($urgent ? ' on' : '')
+			.'" data-socid="'.((int) $row['rowid']).'" data-value="'.($urgent ? 1 : 0).'"'
+			.' title="'.($urgent ? 'Retirer l\'urgence' : 'Marquer à traiter en urgence').'">'
+			.($urgent ? '!' : '·').'</button></td>';
+	}
 	echo '<td><a href="/comm/card.php?socid='.((int) $row['rowid']).'">'.h($row['nom']).'</a>'.(!empty($row['name_alias']) ?' ('.h($row['name_alias']).')' :'').'</td>';
 	echo '<td>'.(!empty($row['p_group']) ?h($p_groups[$row['p_group']]['label'] ?? '') :'').'</td>';
 	if (in_array('ville', $cols))
@@ -864,6 +1013,10 @@ foreach($l as $row) {
 
 	echo '<td class="right nowraponall"><a href="/custom/contacttracking/contacttracking_list.php?socid='.((int) $row['rowid']).'&element_type=thirdparty">Histo</a> | <a href="/comm/action/list.php?sortfield=a.id&sortorder=desc&begin=&contextpage=actioncommlist&search_filtert=-1&search_socid='.((int) $row['rowid']).'&mode=show_month&">Evé</a></td>';
 	echo '<td class="right nowraponall"><a href="/comm/action/card.php?action=create&originid='.((int) $row['rowid']).'&socid='.((int) $row['rowid']).'&backtopage=%2Fcustom%2Fmmicrm%2Fprospects.php&datep='.date('Ymd000000', time()+86400).'&label=Rappeler prospect">Agenda</a></td>';
+	if (in_array('crm_note', $cols)) {
+		echo '<td class="crm-note-col"><textarea class="crm-note" rows="1" data-socid="'.((int) $row['rowid'])
+			.'" placeholder="…">'.h($row['crm_note'] ?? '').'</textarea></td>';
+	}
 	echo '</tr>';
 }
 echo '</table>';
@@ -872,3 +1025,59 @@ echo '</form>';
 
 // Auto-submit des combos utilisateur natifs (Form::select_dolusers) au changement
 echo '<script>jQuery(function($){ $(".crmuserfilter").on("change", function(){ this.form.submit(); }); });</script>';
+
+// Suivi commercial édité en place (RM2858). Écriture optimiste : l'affichage
+// bascule tout de suite, et REVIENT en arrière si le serveur refuse — un échec
+// silencieux ferait croire à l'utilisateur que sa note est enregistrée.
+$ajax_url = dol_buildpath('/mmicrm/ajax/soc_field.php', 1);
+?>
+<script>
+jQuery(function($) {
+	var url = <?php echo json_encode($ajax_url); ?>;
+
+	function save(field, socid, value) {
+		return $.post(url, { field: field, socid: socid, value: value, token: <?php echo json_encode(newToken()); ?> });
+	}
+
+	$('#crm_list').on('click', 'button.crm-urgent', function() {
+		var $b = $(this);
+		if ($b.hasClass('pending')) return;
+		var was = parseInt($b.attr('data-value'), 10) ? 1 : 0;
+		var now = was ? 0 : 1;
+		$b.addClass('pending').toggleClass('on', now === 1).text(now ? '!' : '\u00b7');
+		save('crm_urgent', $b.attr('data-socid'), now)
+			.done(function() {
+				$b.attr('data-value', now)
+				  .attr('title', now ? "Retirer l'urgence" : 'Marquer à traiter en urgence');
+			})
+			.fail(function(xhr) {
+				// Retour à l'état d'avant : le serveur n'a rien écrit.
+				$b.toggleClass('on', was === 1).text(was ? '!' : '\u00b7');
+				alert((xhr.responseJSON && xhr.responseJSON.error) || "L'urgence n'a pas pu être enregistrée.");
+			})
+			.always(function() { $b.removeClass('pending'); });
+	});
+
+	// Enregistrement à la sortie du champ, et seulement si le texte a changé :
+	// un simple passage au clavier ne doit pas déclencher d'écriture.
+	$('#crm_list').on('focus', 'textarea.crm-note', function() {
+		$(this).data('initial', this.value).removeClass('saved failed');
+	});
+	$('#crm_list').on('blur', 'textarea.crm-note', function() {
+		var $t = $(this);
+		if ($t.data('initial') === this.value) return;
+		var value = this.value;
+		save('crm_note', $t.attr('data-socid'), value)
+			.done(function(r) {
+				// Le serveur peut avoir tronqué ou nettoyé : on réaffiche ce qu'il a gardé.
+				if (r && typeof r.value === 'string') $t.val(r.value);
+				$t.data('initial', $t.val()).addClass('saved');
+			})
+			.fail(function(xhr) {
+				$t.addClass('failed');
+				alert((xhr.responseJSON && xhr.responseJSON.error) || "La note n'a pas pu être enregistrée.");
+			});
+	});
+});
+</script>
+<?php
