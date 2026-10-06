@@ -317,7 +317,7 @@ class modMMICRM extends DolibarrModules
 			'titre'=>'MMICRMProspects',
 			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
 			'mainmenu'=>'companies',
-			'leftmenu'=>'mmicrm',
+			'leftmenu'=>'mmicrm_prospects',	// RM3411 : jamais le leftmenu du parent (mmicrm), sinon Menubase rattache les entrées suivantes sous celle-ci
 			'url'=>'/custom/mmicrm/prospects.php',
 			'langs'=>'mmicrm@mmicrm',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>1000+$r,
@@ -332,7 +332,7 @@ class modMMICRM extends DolibarrModules
 			'titre'=>'MMICRMRelances',
 			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
 			'mainmenu'=>'companies',
-			'leftmenu'=>'mmicrm',
+			'leftmenu'=>'mmicrm_relances',	// RM3411 : jamais le leftmenu du parent (mmicrm), sinon Menubase rattache les entrées suivantes sous celle-ci
 			'url'=>'/custom/mmicrm/relances.php',
 			'langs'=>'mmicrm@mmicrm',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>1000+$r,
