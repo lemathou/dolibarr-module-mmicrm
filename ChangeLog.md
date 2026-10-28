@@ -13,3 +13,7 @@ Option so tha there is no automatoc SMS sent after email sent.
 ## 1.2
 
 Page to show and help to fix problems with unclosed orders
+
+## 1.2.1
+
+Fix autosend: do not send SMS and create event if email sent to internal user
