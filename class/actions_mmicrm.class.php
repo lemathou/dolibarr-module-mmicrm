@@ -15,7 +15,6 @@ class ActionsMMICRM extends MMI_Actions_1_0
 		$error = 0; // Error counter
         $this->resprints = '';
 
-        //var_dump($parameters, $object); die();
 
 		// If propal sent by email to customer (and not internal user !!)
 		if ($this->in_context($parameters, 'mail')) {
@@ -45,7 +44,6 @@ class ActionsMMICRM extends MMI_Actions_1_0
 							'nopaylink' => 1, // No payment link in SMS
 						];
 						$ret = mmi_crm_relance::object_sendsms($user, $propal, mmi_crm_relance::PROPAL_RELANCE_SMS_TPL, $options);
-						//var_dump($ret); die();
 					}
 					// Create actioncomm after email
 					if (getDolGlobalInt('MMI_CRM_RELANCE_AFTER_MAIL_AUTO') && empty($object->sendoptions['email_rdv_noauto'])) {

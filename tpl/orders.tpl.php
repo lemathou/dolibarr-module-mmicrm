@@ -98,7 +98,6 @@ $q = $db->query($sql);
 while($row=$q->fetch_assoc()) {
 	if (!isset($cmds[$row['fk_commande']]))
 		continue;
-	//var_dump($row);
 	$cmds[$row['fk_commande']]['e_list'][$row['rowid']] = $row;
 }
 
@@ -117,7 +116,6 @@ while($row=$q->fetch_assoc()) {
 	if (!isset($cmds[$row['fk_commande']]))
 		continue;
 	if (!empty($row['remise_except'])) {
-		//var_dump($row['remise_except']);
 		foreach(explode(',', $row['remise_except']) as $r_line)
 			$cmds[$row['fk_commande']]['remise_except'][] = $r_line;
 	}
