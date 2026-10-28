@@ -100,3 +100,4 @@ Extrafield_propal_echeancedecalauto = La propale a bénéficié d'un report d'é
 RDVAutoRelanceAfterEmail = Relance automatique après envoi par email
 
 Emailqual = Qualification à ajouter aux communications
+ConfirmRefusePropal=Êtes-vous sûr de vouloir refuser cette proposition ?
