@@ -317,7 +317,7 @@ class modMMICRM extends DolibarrModules
 			'titre'=>'MMICRMProspects',
 			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
 			'mainmenu'=>'companies',
-			'leftmenu'=>'mmicrm',
+			'leftmenu'=>'mmicrm_prospects',	// RM3411 : jamais le leftmenu du parent (mmicrm), sinon Menubase rattache les entrées suivantes sous celle-ci
 			'url'=>'/custom/mmicrm/prospects.php',
 			'langs'=>'mmicrm@mmicrm',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>1000+$r,
@@ -332,7 +332,7 @@ class modMMICRM extends DolibarrModules
 			'titre'=>'MMICRMRelances',
 			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
 			'mainmenu'=>'companies',
-			'leftmenu'=>'mmicrm',
+			'leftmenu'=>'mmicrm_relances',	// RM3411 : jamais le leftmenu du parent (mmicrm), sinon Menubase rattache les entrées suivantes sous celle-ci
 			'url'=>'/custom/mmicrm/relances.php',
 			'langs'=>'mmicrm@mmicrm',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>1000+$r,
@@ -459,6 +459,13 @@ class modMMICRM extends DolibarrModules
 		// Create extrafields during init
 		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		$extrafields = new ExtraFields($this->db);
+
+		// Societe — suivi commercial depuis la liste CRM pro (RM2858).
+		// Champs DÉDIÉS et non la note privée native : 389 tiers en ont déjà une,
+		// écrite à d'autres fins ; l'exposer en édition dans une liste organiserait
+		// des écrasements accidentels.
+		$extrafields->addExtraField('crm_urgent', $langs->trans('Extrafield_crm_urgent'), 'boolean', 100, "", 'societe', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_crm_urgent'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
+		$extrafields->addExtraField('crm_note', $langs->trans('Extrafield_crm_note'), 'text', 101, "", 'societe', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_crm_note'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled');
 
 		// Category
         $extrafields->addExtraField('relance_disp', $langs->trans('Extrafield_relance_disp'), 'boolean', 100, "1", 'categorie', 0, 0, '', "", 1, '', 1, $langs->trans('ExtrafieldToolTip_relance_disp'), '', $conf->entity, 'mmicrm@mmicrm', '$conf->mmicrm->enabled && $conf->global->MMICRM_RELANCES');
