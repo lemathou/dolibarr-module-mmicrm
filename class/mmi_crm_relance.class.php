@@ -12,6 +12,7 @@ require_once DOL_DOCUMENT_ROOT."/core/lib/date.lib.php";
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
 dol_include_once("/mmicommon/class/mmi_date.class.php");
+require_once __DIR__.'/mmi_crm_template.class.php';
 
 class mmi_crm_relance extends mmi_generic_1_0
 {
@@ -45,12 +46,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 	public static function map($map, $string)
 	{
-		$map_from = $map_to = [];
-		foreach($map as $key=>$value) {
-			$map_from[] = '{$'.$key.'}';
-			$map_to[] = $value;
-		}
-		return str_replace($map_from, $map_to, $string);
+		return mmi_crm_template::map($map, $string);
 	}
 
 	/**
