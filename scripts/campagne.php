@@ -19,7 +19,7 @@ foreach ($argv as $key=>$arg) {
         $_GET[$e[0]]=0;
 }
 
-var_dump($_GET);// die();
+echo 'GET: '.json_encode($_GET)."\n";
 
 $options = [
 //	'email' => 1,
@@ -35,6 +35,6 @@ if (!empty($_GET['email_send']))
 	$options['email_send'] = true;
 if (!empty($_GET['days_lastemail']))
 	$options['days_lastemail'] = $_GET['days_lastemail'];
-var_dump($options);
+echo 'Options: '.json_encode($options)."\n";
 
 mmi_crm_relance::propal_product_campagne($options);

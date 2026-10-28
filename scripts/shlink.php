@@ -14,5 +14,4 @@ if(empty($argv[1]))
 $url = $argv[1];
 
 $shorturl = mmi_shlink::generate($url);
-//var_dump($shorturl); die();
 echo str_replace('http://', 'https://', $shorturl->shortUrl);
