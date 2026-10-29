@@ -50,3 +50,4 @@ MMICRMIndex = CRM
 # Prospects page
 #
 MMICRMProspects = Gestion avancée des clients et prospects
+MMICRMDescription=MMI CRM: loyalty, dunning, product campaigns, comments and short links.
