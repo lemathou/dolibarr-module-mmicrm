@@ -12,6 +12,7 @@ require_once DOL_DOCUMENT_ROOT."/core/lib/date.lib.php";
 
 dol_include_once("/mmicommon/class/mmi_generic.class.php");
 dol_include_once("/mmicommon/class/mmi_date.class.php");
+require_once __DIR__.'/mmi_crm_template.class.php';
 
 class mmi_crm_relance extends mmi_generic_1_0
 {
@@ -45,13 +46,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 	public static function map($map, $string)
 	{
-		$map_from = $map_to = [];
-		foreach($map as $key=>$value) {
-			$map_from[] = '{$'.$key.'}';
-			$map_to[] = $value;
-		}
-		//var_dump($map_from, $map_to);
-		return str_replace($map_from, $map_to, $string);
+		return mmi_crm_template::map($map, $string);
 	}
 
 	/**
@@ -89,7 +84,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$options['detai'] = is_numeric($delai_default) ?$delai_default :1;
 		}
 		$options['date'] = strtotime(mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']))+9*3600; // 9h00
-		//var_dump(date('Y-m-d'), $options['delai'], mmi_date::decaler_jours_ouvres(date('Y-m-d'), $options['delai']), $options['date']); die();
 
 		$options['label'] = $langs->trans("RDVAutoRelanceAfterEmail");
 		$options['code'] = 'AC_RDV_AUTO';
@@ -289,7 +283,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
-			//var_dump($id);
 			$object = new Propal($db);
 			$object->fetch($id);
 			$object->fetch_thirdparty();
@@ -349,7 +342,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 		if (is_null($options['update_fin_validite']))
 			$options['update_fin_validite'] = 0;
 
-		//var_dump($days);
 
 		// Different possible cases
 		$options['email_message'] = file_get_contents(DOL_DATA_ROOT.'/mmicrm/tpl/email/'.$options['tplref'].'.tpl.html');
@@ -392,7 +384,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 		//die();
 		$nb = 0;
 		while(list($id)=$q->fetch_row()) {
-			//var_dump($id);
 			$object = new Propal($db);
 			$object->fetch($id);
 			// @todo voir si on le fait en auto dans object_sendsms()
@@ -458,25 +449,20 @@ class mmi_crm_relance extends mmi_generic_1_0
 				if (!empty($objectdet->fk_product)) {
 					$product = new Product($db);
 					$product->fetch($objectdet->fk_product);
-					//var_dump($product->array_options);
 					if (!empty($product->array_options['options_fk_categorie'])) {
 						$cat = new Categorie($db);
 						$cat->fetch($product->array_options['options_fk_categorie']);
-						var_dump($cat);
 						// BOucle parents pour choper le premier qu'on veut afficher
 						while (empty($cat->array_options['options_relance_disp']) && !empty($cat->fk_parent)) {
 							$cat->fetch($cat->fk_parent);
-							var_dump($cat);
-						}
+							}
 						if (! empty($cat->array_options['options_relance_disp'])) {
 							$cats[] = $cat->label;
 						}
 					}
 				}
-				//var_dump();
 			}
 			$cats = array_unique($cats);
-			//var_dump($cats); die();
 			if (!empty($cats)) {
 				$projet = ' de '.implode(', ', $cats);
 			}
@@ -487,16 +473,12 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Client
 		$thirdparty = $object->thirdparty;
-		//var_dump($thirdparty); die();
-		//var_dump($thirdparty->nom); die();
 
 		// Commercial
 		// @todo use propal contact if any
 		$commerciaux = $thirdparty->getSalesRepresentatives($user);
-		//var_dump($commerciaux);
 		if (!empty($commerciaux)) {
 			$commercial = array_pop($commerciaux);
-			//var_dump($commercial); die();
 		}
 		else {
 			// @todo Mettre en paramètre
@@ -506,7 +488,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 			$commercial['email'] = 'contact@dercya.com';
 			$commercial['office_phone'] = '04 69 11 00 79';
 		}
-		//var_dump($commercial);
 
 		// Clé de paiement
 		$securekey = dol_hash(getDolGlobalString('PAYMENT_SECURITY_TOKEN').$type.$object->ref, 2);
@@ -518,7 +499,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Construction email
 		$_POST['receiver'] = $thirdparty->nom.' <'.$thirdparty->email.'>';
-		//var_dump($_POST['receiver']); die();
 		if (!empty($commercial['id'])) {
 			$_POST['fromtype'] = 'user';
 			$user = new User($db);
@@ -576,10 +556,8 @@ class mmi_crm_relance extends mmi_generic_1_0
 
 		// Commercial
 		$commerciaux = $thirdparty->getSalesRepresentatives($user);
-		//var_dump($commerciaux);
 		if (!empty($commerciaux)) {
 			$commercial = array_pop($commerciaux);
-			//var_dump($commercial); die();
 		}
 		else {
 			// @todo : use default soc contact
@@ -611,10 +589,7 @@ class mmi_crm_relance extends mmi_generic_1_0
 			if (getDolGlobalString('MMICRM_SHLINK_SCRIPT')) {
 				//@todo PHP bin pas en dur
 				$shlink_command = '/usr/bin/php8.2 -f '.DOL_DOCUMENT_ROOT.'/custom/mmicrm/scripts/shlink.php "'.$payment_url.'"'; // 2>&1
-				//var_dump($shlink_command);
 				$shorturl = exec($shlink_command, $shlink_output, $shlink_result);
-				//var_dump($shlink_result, $shlink_output);
-				//var_dump($shorturl);
 				$shorturl = str_replace('http://', 'https://', $shorturl);
 			}
 			else {
@@ -655,7 +630,6 @@ class mmi_crm_relance extends mmi_generic_1_0
 			'echeance_heures' => ($options['days_min'] == 0 ?'moins de 24' :24*$options['days_min']),
 		];
 		$body = static::map($message_map, $options['sms_message']);
-		//var_dump($body); die();
 
 		if ((empty($sendto) || ! str_replace('+', '', $sendto)) && (! empty($receiver) && $receiver != '-1')) {
 			$sendto=$thirdparty->contact_get_property($receiver, 'mobile');

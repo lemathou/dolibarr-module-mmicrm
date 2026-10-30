@@ -89,7 +89,7 @@ while($row=$q->fetch_assoc()) {
 $sql  = 'SELECT c.rowid AS fk_commande, e.rowid, e.ref, e.date_creation, e.date_valid'
 	.' '.$sql_from
 	.' INNER JOIN '.MAIN_DB_PREFIX.'commandedet cl ON cl.fk_commande=c.rowid'
-	.' INNER JOIN '.MAIN_DB_PREFIX.'expeditiondet el ON el.fk_origin_line=cl.rowid'
+	.' INNER JOIN '.MAIN_DB_PREFIX.'expeditiondet el ON el.fk_elementdet=cl.rowid'
 	.' INNER JOIN '.MAIN_DB_PREFIX.'expedition e ON e.rowid=el.fk_expedition'
 	.' WHERE '.$sql_where
 	.' GROUP BY e.rowid';
@@ -98,7 +98,6 @@ $q = $db->query($sql);
 while($row=$q->fetch_assoc()) {
 	if (!isset($cmds[$row['fk_commande']]))
 		continue;
-	//var_dump($row);
 	$cmds[$row['fk_commande']]['e_list'][$row['rowid']] = $row;
 }
 
@@ -117,7 +116,6 @@ while($row=$q->fetch_assoc()) {
 	if (!isset($cmds[$row['fk_commande']]))
 		continue;
 	if (!empty($row['remise_except'])) {
-		//var_dump($row['remise_except']);
 		foreach(explode(',', $row['remise_except']) as $r_line)
 			$cmds[$row['fk_commande']]['remise_except'][] = $r_line;
 	}

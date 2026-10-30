@@ -30,7 +30,8 @@ static function __init()
 			'version' => '3',
 		]);
 	} catch (InvalidConfigException $e) {
-		var_dump($e); die();
+		dol_syslog(__METHOD__.' : configuration Shlink invalide : '.$e->getMessage(), LOG_ERR);
+		die();
 		// Either 'baseUrl' or 'apiKey' props were missing in the array,
 		// or 'version' prop has a value different from "2" or "3".
 	}
